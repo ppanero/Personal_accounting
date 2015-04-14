@@ -2,252 +2,177 @@ __author__ = 'Pablo Panero'
 __author__ = 'Raúl Jiménez Redondo'
 
 import sqlite3, sys, re, os
-#Default paths for .db and .sql files to create and populate the database.
-DEFAULT_DB_PATH = 'db/db.db'
+# Default paths for .db and .sql files to create and populate the database.
+DEFAULT_DB_PATH = 'db/accounting_db.db'
 DEFAULT_SCHEMA = "db/db_schema_dump.sql"
 DEFAULT_DATA_DUMP = "db/db_data_dump.sql"
 
+
 class AccountingDatabase(object):
-    '''
+    """
     API to access Accounting database.
-    '''
+    """
 
     def __init__(self, db_path=None):
-        '''
+        """
         db_path is the address of the path with respect to the calling script.
         If db_path is None, DEFAULT_DB_PATH is used instead.
-        '''
+        """
         super(AccountingDatabase, self).__init__()
         if db_path is not None:
             self.db_path = db_path
         else:
             self.db_path = DEFAULT_DB_PATH
 
-    #Setting up the database. Used for the tests.
-    #SETUP, POPULATE and DELETE the database
+    # Setting up the database. Used for the tests.
+    # SETUP, POPULATE and DELETE the database
     def clean(self):
-        '''
+        """
         Purge the database removing old values.
-        '''
+        """
         os.remove(self.db_path)
 
     def load_init_values(self, schema=None, dump=None):
-        '''
+        """
         Create the database and populate it with initial values. The schema
         argument defines the location of the schema sql file while the dump
         argument defines the location of the data dump sql file. If no value
         is provided default values are defined by the global variables
         DEFAULT_SCHEMA and DEFAULT_DATA_DUMP
-        '''
+        """
         self.create_tables_from_schema(schema)
         self.load_table_values_from_dump(dump)
 
     def create_tables_from_schema(self, schema=None):
-        '''
+        """
         Create programmatically the tables from a schema file.
         schema contains the path to the .sql schema file. If it is None,
         DEFAULT_SCHEMA is used instead.
-        '''
+        """
         con = sqlite3.connect(self.db_path)
         if schema is None:
             schema = DEFAULT_SCHEMA
-        with open (schema) as f:
+        with open(schema) as f:
             sql = f.read()
             cur = con.cursor()
             cur.executescript(sql)
 
     def load_table_values_from_dump(self, dump=None):
-        '''
+        """
         Populate programmatically the tables from a dump file.
         dump is the  path to the .sql dump file. If it is None,
         DEFAULT_DATA_DUMP is used instead.
-        '''
+        """
         con = sqlite3.connect(self.db_path)
         if dump is None:
             dump = DEFAULT_DATA_DUMP
-        with open (dump) as f:
+        with open(dump) as f:
             sql = f.read()
             cur = con.cursor()
             cur.executescript(sql)
 
-    #CREATE THE TABLES PROGRAMMATICALLY WITHOUT USING SQL SCRIPT
+    # CREATE THE TABLES PROGRAMMATICALLY WITHOUT USING SQL SCRIPT
     def create_user_table(self):
-        '''
+        """
         Create the table user programmatically without using .sql file.
         Print an error message in the console if it could not be created.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE user (_id INTEGER PRIMARY KEY AUTOINCREMENT, \
-                    nickname TEXT NOT NULL UNIQUE)'
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
-            cur = con.cursor()
-            try:
-                cur.execute(keys_on)
-                #execute the statement
-                cur.execute(stmnt)
-            except sqlite3.Error, excp:
-                print "Error %s:" % excp.args[0]
-        return None
+                    nickname TEXT NOT NULL UNIQUE, email TEXT NOT NULL UNIQUE, \
+                    password TEXT NOT NULL, name TEXT NOT NULL, balance REAL NOT NULL, \
+                    birthday TEXT, gender TEXT)'
 
-    def create_group_table(self):
-        '''
-        Create the table group programmatically without using .sql file.
-        Print an error message in the console if it could not be created.
-        '''
-        keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'CREATE TABLE group (_id INTEGER PRIMARY KEY AUTOINCREMENT, \
-                    name TEXT NOT NULL UNIQUE, description TEXT)'
         con = sqlite3.connect(self.db_path)
         with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
+            # Get the cursor object.
+            # It allows to execute SQL code and traverse the result set
             cur = con.cursor()
             try:
                 cur.execute(keys_on)
-                #execute the statement
-                cur.execute(stmnt)
-            except sqlite3.Error, excp:
-                print "Error %s:" % excp.args[0]
-        return None
-
-    def create_event_table(self):
-        '''
-        Create the table event programmatically without using .sql file.
-        Print an error message in the console if it could not be created.
-        '''
-        keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'CREATE TABLE event(_id INTEGER PRIMARY KEY AUTOINCREMENT, \
-                    name TEXT NOT NULL, description TEXT, \
-                    date INTEGER, group_id INTEGER NOT NULL, \
-                    FOREIGN KEY(group_id) REFERENCES group (_id) \
-                    ON DELETE CASCADE ON UPDATE CASCADE)'
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
-            cur = con.cursor()
-            try:
-                cur.execute(keys_on)
-                #execute the statement
+                # execute the statement
                 cur.execute(stmnt)
             except sqlite3.Error, excp:
                 print "Error %s:" % excp.args[0]
         return None
 
     def create_expense_table(self):
-        '''
+        """
         Create the table expense programmatically without using .sql file.
         Print an error message in the console if it could not be created.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE expense(_id INTEGER PRIMARY KEY AUTOINCREMENT, \
                     source TEXT NOT NULL, amount REAL NOT NULL, \
                     date TEXT NOT NULL, description TEXT, \
-                    bill_image BLOB, user_id INTEGER NOT NULL, \
-                    event_id INTEGER NOT NULL, \
+                    user_id INTEGER NOT NULL, \
                     FOREIGN KEY(user_id) REFERENCES user (_id) \
-                    ON DELETE CASCADE ON UPDATE CASCADE, \
-                    FOREIGN KEY(event_id) REFERENCES event (_id) \
                     ON DELETE CASCADE ON UPDATE CASCADE)'
+
         con = sqlite3.connect(self.db_path)
         with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
+            # Get the cursor object.
+            # It allows to execute SQL code and traverse the result set
             cur = con.cursor()
             try:
                 cur.execute(keys_on)
-                #execute the statement
+                # execute the statement
                 cur.execute(stmnt)
             except sqlite3.Error, excp:
                 print "Error %s:" % excp.args[0]
         return None
 
     def create_income_table(self):
-        '''
+        """
         Create the table income programmatically without using .sql file.
         Print an error message in the console if it could not be created.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'CREATE TABLE income(_id INTEGER PRIMARY KEY AUTOINCREMENT, \
                     source TEXT NOT NULL, amount REAL NOT NULL, \
                     date TEXT NOT NULL, description TEXT, \
-                    bill_image BLOB, user_id INTEGER NOT NULL, \
-                    event_id INTEGER NOT NULL, \
+                    user_id INTEGER NOT NULL, \
                     FOREIGN KEY(user_id) REFERENCES user (_id) \
-                    ON DELETE CASCADE ON UPDATE CASCADE, \
-                    FOREIGN KEY(event_id) REFERENCES event (_id) \
                     ON DELETE CASCADE ON UPDATE CASCADE)'
         con = sqlite3.connect(self.db_path)
         with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
+            # Get the cursor object.
+            # It allows to execute SQL code and traverse the result set
             cur = con.cursor()
             try:
                 cur.execute(keys_on)
-                #execute the statement
-                cur.execute(stmnt)
-            except sqlite3.Error, excp:
-                print "Error %s:" % excp.args[0]
-        return None
-
-    def create_users_of_group_table(self):
-        '''
-        Create the table users_of_table programmatically without using .sql file.
-        Print an error message in the console if it could not be created.
-        '''
-        keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'CREATE TABLE users_of_table(user_id INTEGER NOT NULL, \
-                    group_id INTEGER NOT NULL, \
-                    PRIMARY KEY(user_id, group_id), \
-                    FOREIGN KEY(user_id) REFERENCES user (_id) \
-                    ON DELETE CASCADE ON UPDATE CASCADE, \
-                    FOREIGN KEY(event_id) REFERENCES event (_id) \
-                    ON DELETE CASCADE ON UPDATE CASCADE)'
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
-            cur = con.cursor()
-            try:
-                cur.execute(keys_on)
-                #execute the statement
+                # execute the statement
                 cur.execute(stmnt)
             except sqlite3.Error, excp:
                 print "Error %s:" % excp.args[0]
         return None
 
     def create_all_tables(self):
-        '''
+        """
         Create all tables programmatically, without using an external sql.
         It prints error messages in console if any of the tables could not be
         created.
-        '''
+        """
         self.create_user_table()
-        self.create_group_table()
-        self.create_event_table()
         self.create_expense_table()
         self.create_income_table()
-        self.create_users_of_group_table()
 
-    #HELPERS
+    # HELPERS
     def check_foreign_keys_status(self):
-        '''
+        """
         Check if the foreign keys has been activated. Return and print in the
         screen if foreign keys are activated.
-        '''
+        """
         con = None
         try:
-            #Connects to the database.
+            # Connects to the database.
             con = sqlite3.connect(self.db_path)
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
+            # Get the cursor object.
+            # It allows to execute SQL code and traverse the result set
             cur = con.cursor()
-            #Execute the pragma command
+            # Execute the pragma command
             cur.execute('PRAGMA foreign_keys')
-            #We know we retrieve just one record: use fetchone()
+            # We know we retrieve just one record: use fetchone()
             data = cur.fetchone()
             data_text = 'ON' if data == (1,) else 'OFF'
             print "Foreign Keys status: %s" % data_text
@@ -262,23 +187,23 @@ class AccountingDatabase(object):
         return data
 
     def set_and_check_foreign_keys_status(self):
-        '''
+        """
         Activate the support for foreign keys and later check that the support
         exists. Print the results of this test.
-        '''
+        """
         keys_on = 'PRAGMA foreign_keys = ON'
         con = None
         try:
-            #connects to the database.
+            # connects to the database.
             con = sqlite3.connect(self.db_path)
-            #Get the cursor object.
-            #It allows to execute SQL code and traverse the result set
+            # Get the cursor object.
+            # It allows to execute SQL code and traverse the result set
             cur = con.cursor()
-            #execute the pragma command, ON
+            # execute the pragma command, ON
             cur.execute(keys_on)
-            #execute the pragma check command
+            # execute the pragma check command
             cur.execute('PRAGMA foreign_keys')
-            #we know we retrieve just one record: use ftchone()
+            # we know we retrieve just one record: use ftchone()
             data = cur.fetchone()
             data_text = 'ON' if data == (1,) else 'OFF'
             print "Foreign Keys status: %s" % data_text
@@ -292,26 +217,34 @@ class AccountingDatabase(object):
                 con.close()
         return data
 
-    #ACCESSING THE USER TABLE
-    #Here the helpers that transform database rows into dictionary.
+    # ACCESSING THE USER TABLE
+    # Here the helpers that transform database rows into dictionary.
     def _create_user_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         Dictionary contains the following keys:
           - userid: id of the user (int)
           - nickname: user's nickname
         Note that all values in the returned dictionary are string unless
         otherwise stated.
-        '''
-        id = str(row['user_id'])
+        """
+        id = 'usr-' + str(row['user_id'])
         nickname = row['nickname']
-        user = {'userid':id, 'nickname': nickname}
+        email = row['email']
+        password = row['password']
+        name = row['name']
+        balance = str(row['balance'])
+        birthday = row['birthday']
+        gender = row['gender']
+
+        user = {'user_id': id, 'nickname': nickname, 'email': email,
+                'password': password, 'name': name, 'balance': balance,
+                'birthday': birthday, 'gender': gender}
         return user
 
-        #User Table API.
-
+    # User Table API.
     def get_user(self, userId):
-        '''
+        """
         Return an user with id equals userid or None if there is no
         such user.
         OUTPUT:
@@ -319,65 +252,71 @@ class AccountingDatabase(object):
               described in _create_user_object.
         INPUT:
             - The id of the user. Note that userid is a string.
-        '''
-        #Changes the id to integer
-        userid = int(userId)
+        """
+        # Changes the id to integer
+        match = re.match(r'usr-(\d{1,3})', userId)
+        if match is None:
+            raise ValueError("The user id is malformed")
+        userid = int(match.group(1))
 
-        #Create the SQL Query
+        # Create the SQL Query
         keys_on = 'PRAGMA foreign_keys = ON'
         query = 'SELECT * FROM user WHERE _id = ?'
-        #Connects to the database. Gets a connection object
+        # Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (userid,)
             cur.execute(query, pvalue)
-            #Process the response.
-            #Just one row is expected
+            # Process the response.
+            # Just one row is expected
             row = cur.fetchone()
             if row is None:
                 return None
-            #Build the return object
+            # Build the return object
             return self._create_user_object(row)
 
     def delete_user(self, userId):
-        '''
+        """
         Delete the user with id given as parameter.
         INPUT:
             The id of the user to remove. Note that userid is a string.
         OUTPUT:
              True if the user has been deleted, False otherwise.
-        '''
-        #Changes the id to integer
-        userid = int(userId)
+        """
+        # Changes the id to integer
+        match = re.match(r'usr-(\d{1,3})', userId)
+        if match is None:
+            raise ValueError("The user id is malformed")
+        userid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'DELETE FROM user WHERE _id = ?'
-        #connects  to the database.
+        # connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (userid,)
             cur.execute(stmnt, pvalue)
-            #Check that the user has been deleted
+            # Check that the user has been deleted
             if cur.rowcount < 1:
                 return False
-            #Return true if user is deleted.
+            # Return true if user is deleted.
             return True
 
-    def modify_user(self, userId, nickname, body):
-        '''
+    def modify_user(self, userId, nickname, email, name, balance, birthday, gender):
+        """
         Modify the nickname, of the user which has userId as id.
         INPUT:
             - userId: The id of the user to change nickname.
@@ -385,30 +324,34 @@ class AccountingDatabase(object):
         OUTPUT:
             - returns the id of the edited user or None if the user was
               not found.
-        '''
-        #Changes the id to integer
-        userid = int(userId)
+        """
+        # Changes the id to integer
+        match = re.match(r'usr-(\d{1,3})', userId)
+        if match is None:
+            raise ValueError("The user id is malformed")
+        userid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'UPDATE user SET nickname=? WHERE _id = ?'
-        #Connects  to the database.
+        stmnt = 'UPDATE user SET nickname=? , email=? , name=?, ' \
+                'balance=? , birthday=? , gender=? WHERE _id = ?'
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
-            pvalue = (nickname, userid)
+            # Execute main SQL Statement
+            pvalue = (nickname, email, name, balance, birthday, gender, userid)
             cur.execute(stmnt, pvalue)
             if cur.rowcount < 1:
                 return None
             return userId
 
-    def create_user(self, nickname):
-        '''
+    def create_user(self, nickname, email, password, name, birthday, gender):
+        """
         Create a new user with the data provided as arguments.
         INPUT:
             - nickname: nickname for the new user
@@ -417,44 +360,44 @@ class AccountingDatabase(object):
             - returns the id of the created user or None if the user. None if the
             nickname is already in use.
         raises AccountingDatabaseError if the database could not be modified.
-        '''
-        #Changes the id to integer
-        userid = int(userId)
+        """
 
-        #Create the SQL statment
-        #SQL STATMENTS FOR KEYS
+        # Create the SQL statment
+        # SQL STATMENTS FOR KEYS
         keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL to test that the nickname is not in use
+        # SQL to test that the nickname is not in use
         query1 = 'SELECT * from user WHERE nickname = ?'
-        #SQL Statement for getting the user id given a nickname
-        stmnt = 'INSERT INTO user (nickname) VALUES (?)'
+        # SQL Statement for getting the user id given a nickname
+        stmnt = 'INSERT INTO user (nickname, email, password, name, balance, ' \
+                'birthday, gender) VALUES (?, ?, ?, ?, ?, ?, ?)'
 
-        #Connects  to the database.
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #If the nickname exists return None
+            # If the nickname exists return None
             pvalue = (nickname,)
             cur.execute(query1, pvalue)
             messages = cur.fetchall()
             if len(messages) < 1:
                 return None
 
-            #Execute the statement
+            # Execute the statement
+            pvalue = (nickname, email, password, name, 0, birthday, gender)
             cur.execute(stmnt, pvalue)
-            #Extract the id of the added message
+            # Extract the id of the added user
             lid = cur.lastrowid
-            #Return the id in
+            # Return the id in
             return str(lid) if lid is not None else None
 
-    #ACCESSING THE INCOME TABLE
-    #Here the helpers that transform database rows into dictionary.
+    # ACCESSING THE INCOME TABLE
+    # Here the helpers that transform database rows into dictionary.
     def _create_income_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         Dictionary contains the following keys:
           - income_id: id of the income (int)
@@ -465,37 +408,34 @@ class AccountingDatabase(object):
           - event_id: income's event
           - date: income's date
 
-        '''
-        item_id = 'itm-' + str(row['item_id'])
-        item_user_id = 'itm-'+ str(row['user_id'])
-        item_event_id = 'itm-'+ str(row['event_id']) \
-            if row['event'] is not None else None
-        item_source = row['source']
-        item_amount = row['amount']
-        item_description = row['description']
-        item_date = row['date']
-        item = {'itemid':item_id, 'user': item_user_id,
-                'source':item_source, 'amount':item_amount,
-                'description':item_description, 'date':item_date,
-                'event':item_event_id}
-        return item
+        """
+        income_id = 'inc-' + str(row['_id'])
+        income_user_id = 'inc-' + str(row['user_id'])
+        income_source = row['source']
+        income_amount = str(row['amount'])
+        income_description = row['description']
+        income_date = row['date']
+        income = {'income_id': income_id, 'user': income_user_id,
+                  'source': income_source, 'amount': income_amount,
+                  'description': income_description, 'date': income_date}
+        return income
 
     def _create_income_list_object(self, row):
-        '''
+        """
         Same as _create_income_object. However, the result of this method is
         targeted to create lists. The only keys returned by the objects
         are income_id, source, amount and date.
-        '''
-        item_id = 'itm-' + str(row['item_id'])
+        """
+        item_id = 'inc-' + str(row['item_id'])
         item_source = row['source']
         item_amount = row['amount']
         item_date = row['date']
-        item = {'itemid':item_id,'source':item_source,
-                'amount':item_amount, 'date':item_date}
+        item = {'income_id': item_id, 'source': item_source,
+                'amount': item_amount, 'date': item_date}
         return item
 
     def get_income(self, incomeId):
-        '''
+        """
         Return a income with id equals income or None if there is no
         such income.
         OUTPUT:
@@ -505,37 +445,37 @@ class AccountingDatabase(object):
             - The id of the income. Note that incomeid is a string with
               format itm-\d{1,3}.
         Raises a value error if incomeid is not well formed.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', incomeId)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'inc-(\d{1,3})', incomeId)
         if match is None:
             raise ValueError("The incomeid is malformed")
         incomeid = int(match.group(1))
 
-        #Create the SQL Query
+        # Create the SQL Query
         keys_on = 'PRAGMA foreign_keys = ON'
         query = 'SELECT * FROM income WHERE _id = ?'
-        #Connects to the database. Gets a connection object
+        # Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (incomeid,)
             cur.execute(query, pvalue)
-            #Process the response.
-            #Just one row is expected
+            # Process the response.
+            # Just one row is expected
             row = cur.fetchone()
             if row is None:
                 return None
-            #Build the return object
+            # Build the return object
             return self._create_income_object(row)
 
     def get_user_incomes(self, userId):
-        '''
+        """
         Return a list of all the messages sent by:
             * The user with nick equals to nickname (string)
             * All the users in the system if nickname is None
@@ -556,98 +496,40 @@ class AccountingDatabase(object):
         Note that all values in the returned dictionary are string unless
         otherwise stated.
         raises a ValueError if the before or after are not valid data formats
-        '''
-        #Extracts the int which is the id for a message in the database
+        """
+        # Extracts the int which is the id for a message in the database
         match = re.match(r'usr-(\d{1,3})', userId)
         if match is None:
             raise ValueError("The user id is malformed")
         userid = int(match.group(1))
-        #Create the SQL Statement
+
+        # Create the SQL Statement
         keys_on = 'PRAGMA foreign_keys = ON'
         # Query to check the existance of the user
         # Might not be needed, but by using it we can distinguish no
         # user from no income when user exists
         query1 = 'SELECT * FROM user WHERE _id = ?'
-        #SQL statement to get incomes
+        # SQL statement to get incomes
         stmnt = 'SELECT * FROM incomes WHERE user_id = ?'
 
-        #Connects to the database.
+        # Connects to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
-            cur.execute(query1)
-            #Get results
-            rows = cur.fetchall()
-            if len(rows) < 1:
-                return None
+            # Execute main SQL Statement
             pvalue = (userid,)
-            cur.execute(stmnt, pvalue)
-            rows = cur.fetchall()
-            #Build the return object
-            incomes = []
-            for row in rows:
-                income = self._create_message_list_object(row)
-                incomes.append(income)
-            return incomes
-
-    def get_event_incomes(self, eventId):
-        '''
-         Return a list of all the messages sent by:
-             * The user with nick equals to nickname (string)
-             * All the users in the system if nickname is None
-         Before returning it the list is filtered accordding to the arguments:
-             * number_of_messages (int): sets the maximum lenght of the list
-               (-1 means no limit)
-             * before (long integer): All timestamps > before (UNIX timestamps)
-                                      are removed
-             * after (long integer): All timestamps < after (UNIX timestamp)
-                                     are removed
-
-         Each message in the list is a dictionary containing the following keys:
-          - messageid: string with the format msg-\d{1,3}. Id of the message.
-          - sender: nickname of the message's author,
-          - title: string containing the title of the message
-          - timestamp: UNIX timestamp (long int) that specifies when the message
-                     was created.
-         Note that all values in the returned dictionary are string unless
-         otherwise stated.
-         raises a ValueError if the before or after are not valid data formats
-         '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'evt-(\d{1,3})', eventId)
-        if match is None:
-            raise ValueError("The incomeid is malformed")
-        eventid = int(match.group(1))
-        #Create the SQL Statement
-        keys_on = 'PRAGMA foreign_keys = ON'
-        # Query to check the existance of the event
-        query1 = 'SELECT * FROM event WHERE _id = ?'
-        #SQL statement to get incomes
-        stmnt = 'SELECT * FROM incomes WHERE event_id = ?'
-
-        #Connects to the database.
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            #Execute main SQL Statement
-            cur.execute(query1)
-            #Get results
+            cur.execute(query1, pvalue)
+            # Get results
             rows = cur.fetchall()
             if len(rows) < 1:
                 return None
-            pvalue = (eventid,)
             cur.execute(stmnt, pvalue)
             rows = cur.fetchall()
-            #Build the return object
+            # Build the return object
             incomes = []
             for row in rows:
                 income = self._create_message_list_object(row)
@@ -655,41 +537,41 @@ class AccountingDatabase(object):
             return incomes
 
     def delete_income(self, incomeId):
-        '''
+        """
         Delete the income with id given as parameter.
         INPUT:
             The id of the user to remove. Note that userid is a string.
         OUTPUT:
              True if the user has been deleted, False otherwise.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', incomeId)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'inc-(\d{1,3})', incomeId)
         if match is None:
-            raise ValueError("The incomeid is malformed")
+            raise ValueError("The income id is malformed")
         incomeid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'DELETE FROM income WHERE _id = ?'
-        #connects  to the database.
+        # connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (incomeid,)
             cur.execute(stmnt, pvalue)
-            #Check that the user has been deleted
+            # Check that the user has been deleted
             if cur.rowcount < 1:
                 return False
-            #Return true if user is deleted.
+            # Return true if user is deleted.
             return True
 
     def modify_income(self, incomeId, source, amount, date, description):
-        '''
+        """
         Modify the nickname, of the user which has userId as id.
         INPUT:
             - incomeId: The id of the inocome to change values.
@@ -699,33 +581,33 @@ class AccountingDatabase(object):
         OUTPUT:
             - returns the id of the edited income or None if the user was
               not found.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', incomeId)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'inc-(\d{1,3})', incomeId)
         if match is None:
             raise ValueError("The incomeid is malformed")
         incomeid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'UPDATE income SET source=?, amount=?, date=?, description=?  WHERE _id = ?'
-        #Connects  to the database.
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (source, amount, date, description, incomeid)
             cur.execute(stmnt, pvalue)
             if cur.rowcount < 1:
                 return None
-            return 'itm-'+str(incomeid)
+            return 'inc-' + str(incomeid)
 
-    def create_income(self, source, amount, date, description, billimage, userid, eventid):
-        '''
+    def create_income(self, source, amount, date, description, userid):
+        """
         Create a new user with the data provided as arguments.
         INPUT:
             - source, amount, date, description, bill_image are the
@@ -737,62 +619,52 @@ class AccountingDatabase(object):
             - returns the id of the created income. None if the user or event
             does not exists.
         raises AccountingDatabaseError if the database could not be modified.
-        '''
+        """
 
-        #Create the SQL statment
-        #SQL STATMENTS FOR KEYS
+        # Create the SQL statment
+        # SQL STATMENTS FOR KEYS
         keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL to test that the user exists
+        # SQL to test that the user exists
         query1 = 'SELECT * from user WHERE _id = ?'
-        #SQL to test that the event exists
-        query2 = 'SELECT * from event WHERE _id = ?'
-        #SQL Statement for getting the user id given a nickname
-        stmnt = 'INSERT INTO user (source, amount, date, description, bill_image, ' \
-                'user_id, event_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        # SQL Statement for getting the user id given a nickname
+        stmnt = 'INSERT INTO income (source, amount, date, description, ' \
+                'user_id) VALUES (?, ?, ?, ?, ?)'
 
-        #Connects  to the database.
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
 
-            #Execute SQL Statement to check if the user exists
+            # Execute SQL Statement to check if the user exists
             pvalue = (userid,)
             cur.execute(query1, pvalue)
             row = cur.fetchone()
             if row is None:
                 return None
 
-            #Execute SQL Statement to check if the event exists
-            pvalue = (eventid,)
-            cur.execute(query2, pvalue)
-            #Extract user id
-            row = cur.fetchone()
-            if row is None:
-                return None
-
-            #If the nickname exists return None
-            pvalue = (source, amount, date, description, billimage,
-                userid, eventid)
+            # If the nickname exists return None
+            pvalue = (source, amount, date, description,
+                      userid)
             cur.execute(stmnt, pvalue)
             messages = cur.fetchall()
             if len(messages) < 1:
                 return None
 
-            #Execute the statement
+            # Execute the statement
             cur.execute(stmnt, pvalue)
-            #Extract the id of the added message
+            # Extract the id of the added message
             lid = cur.lastrowid
-            #Return the id in
+            # Return the id in
             return str(lid) if lid is not None else None
 
-    #ACCESSING THE EXPENSE TABLE
-    #Here the helpers that transform database rows into dictionary.
+    # ACCESSING THE EXPENSE TABLE
+    # Here the helpers that transform database rows into dictionary.
     def _create_expense_object(self, row):
-        '''
+        """
         It takes a database Row and transform it into a python dictionary.
         Dictionary contains the following keys:
           - expense_id: id of the expense (int)
@@ -803,37 +675,34 @@ class AccountingDatabase(object):
           - event_id: expense's event
           - date: expense's date
 
-        '''
-        item_id = 'itm-' + str(row['item_id'])
-        item_user_id = 'itm-'+ str(row['user_id'])
-        item_event_id = 'itm-'+ str(row['event_id']) \
-            if row['event'] is not None else None
-        item_source = row['source']
-        item_amount = row['amount']
-        item_description = row['description']
-        item_date = row['date']
-        item = {'itemid':item_id, 'user': item_user_id,
-                'source':item_source, 'amount':item_amount,
-                'description':item_description, 'date':item_date,
-                'event':item_event_id}
-        return item
+        """
+        expense_id = 'exp-' + str(row['_id'])
+        expense_user_id = 'usr-' + str(row['user_id'])
+        expense_source = row['source']
+        expense_amount = row['amount']
+        expense_description = row['description']
+        expense_date = row['date']
+        expense = {'expense_id': expense_id, 'user': expense_user_id,
+                   'source': expense_source, 'amount': expense_amount,
+                   'description': expense_description, 'date': expense_date}
+        return expense
 
     def _create_expense_list_object(self, row):
-        '''
+        """
         Same as _create_expense_object. However, the result of this method is
         targeted to create lists. The only keys returned by the objects
         are income_id, source, amount and date.
-        '''
-        item_id = 'itm-' + str(row['item_id'])
-        item_source = row['source']
-        item_amount = row['amount']
-        item_date = row['date']
-        item = {'itemid':item_id,'source':item_source,
-                'amount':item_amount, 'date':item_date}
-        return item
+        """
+        expense_id = 'exp-' + str(row['_id'])
+        expense_source = row['source']
+        expense_amount = row['amount']
+        expense_date = row['date']
+        expense = {'expense_id': expense_id, 'source': expense_source,
+                'amount': expense_amount, 'date': expense_date}
+        return expense
 
-    def get_expense(self, expenseid):
-        '''
+    def get_expense(self, expenseId):
+        """
         Return a expense with id equals expense or None if there is no
         such expense.
         OUTPUT:
@@ -843,37 +712,37 @@ class AccountingDatabase(object):
             - The id of the expense. Note that expenseid is a string with
               format itm-\d{1,3}.
         Raises a value error if expenseid is not well formed.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', expenseid)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'exp-(\d{1,3})', expenseId)
         if match is None:
             raise ValueError("The expenseid is malformed")
         expenseid = int(match.group(1))
 
-        #Create the SQL Query
+        # Create the SQL Query
         keys_on = 'PRAGMA foreign_keys = ON'
         query = 'SELECT * FROM expense WHERE _id = ?'
-        #Connects to the database. Gets a connection object
+        # Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (expenseid,)
             cur.execute(query, pvalue)
-            #Process the response.
-            #Just one row is expected
+            # Process the response.
+            # Just one row is expected
             row = cur.fetchone()
             if row is None:
                 return None
-            #Build the return object
+            # Build the return object
             return self._create_expense_object(row)
 
     def get_user_expenses(self, userId):
-        '''
+        """
         Return a list of all the messages sent by:
             * The user with nick equals to nickname (string)
             * All the users in the system if nickname is None
@@ -894,140 +763,81 @@ class AccountingDatabase(object):
         Note that all values in the returned dictionary are string unless
         otherwise stated.
         raises a ValueError if the before or after are not valid data formats
-        '''
-        #Extracts the int which is the id for a message in the database
+        """
+        # Extracts the int which is the id for a message in the database
         match = re.match(r'usr-(\d{1,3})', userId)
         if match is None:
             raise ValueError("The user id is malformed")
         userid = int(match.group(1))
-        #Create the SQL Statement
+        # Create the SQL Statement
         keys_on = 'PRAGMA foreign_keys = ON'
         # Query to check the existance of the user
         # Might not be needed, but by using it we can distinguish no
         # user from no income when user exists
         query1 = 'SELECT * FROM user WHERE _id = ?'
-        #SQL statement to get incomes
+        # SQL statement to get expenses
         stmnt = 'SELECT * FROM expense WHERE user_id = ?'
 
-        #Connects to the database.
+        # Connects to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
-            cur.execute(query1)
-            #Get results
+            # Execute main SQL Statement
+            pvalue = (userid,)
+            cur.execute(query1, pvalue)
+            # Get results
             rows = cur.fetchall()
             if len(rows) < 1:
                 return None
-            pvalue = (userid,)
             cur.execute(stmnt, pvalue)
             rows = cur.fetchall()
-            #Build the return object
+            # Build the return object
             expenses = []
             for row in rows:
                 expense = self._create_expense_list_object(row)
                 expenses.append(expense)
             return expenses
 
-    def get_event_expenses(self, eventId):
-        '''
-         Return a list of all the messages sent by:
-             * The user with nick equals to nickname (string)
-             * All the users in the system if nickname is None
-         Before returning it the list is filtered accordding to the arguments:
-             * number_of_messages (int): sets the maximum lenght of the list
-               (-1 means no limit)
-             * before (long integer): All timestamps > before (UNIX timestamps)
-                                      are removed
-             * after (long integer): All timestamps < after (UNIX timestamp)
-                                     are removed
-
-         Each message in the list is a dictionary containing the following keys:
-          - messageid: string with the format msg-\d{1,3}. Id of the message.
-          - sender: nickname of the message's author,
-          - title: string containing the title of the message
-          - timestamp: UNIX timestamp (long int) that specifies when the message
-                     was created.
-         Note that all values in the returned dictionary are string unless
-         otherwise stated.
-         raises a ValueError if the before or after are not valid data formats
-         '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'evt-(\d{1,3})', eventId)
-        if match is None:
-            raise ValueError("The incomeid is malformed")
-        eventid = int(match.group(1))
-        #Create the SQL Statement
-        keys_on = 'PRAGMA foreign_keys = ON'
-        # Query to check the existance of the event
-        query1 = 'SELECT * FROM event WHERE _id = ?'
-        #SQL statement to get incomes
-        stmnt = 'SELECT * FROM expense WHERE event_id = ?'
-
-        #Connects to the database.
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            #Execute main SQL Statement
-            cur.execute(query1)
-            #Get results
-            rows = cur.fetchall()
-            if len(rows) < 1:
-                return None
-            pvalue = (eventid,)
-            cur.execute(stmnt, pvalue)
-            rows = cur.fetchall()
-            #Build the return object
-            expenses = []
-            for row in rows:
-                expense = self._create_message_list_object(row)
-                expenses.append(expense)
-            return expenses
-
     def delete_expense(self, expenseId):
-        '''
+        """
         Delete the income with id given as parameter.
         INPUT:
             The id of the user to remove. Note that userid is a string.
         OUTPUT:
              True if the user has been deleted, False otherwise.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', expenseId)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'exp-(\d{1,3})', expenseId)
         if match is None:
-            raise ValueError("The incomeid is malformed")
+            raise ValueError("The expense id is malformed")
         expenseid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'DELETE FROM expense WHERE _id = ?'
-        #connects  to the database.
+        # connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (expenseid,)
             cur.execute(stmnt, pvalue)
-            #Check that the user has been deleted
+            # Check that the user has been deleted
             if cur.rowcount < 1:
                 return False
-            #Return true if user is deleted.
+            # Return true if user is deleted.
             return True
 
     def modify_expense(self, expenseId, source, amount, date, description):
-        '''
+        """
         Modify the nickname, of the user which has userId as id.
         INPUT:
             - incomeId: The id of the inocome to change values.
@@ -1037,33 +847,33 @@ class AccountingDatabase(object):
         OUTPUT:
             - returns the id of the edited income or None if the user was
               not found.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'itm-(\d{1,3})', expenseId)
+        """
+        # Extracts the int which is the id for a message in the database
+        match = re.match(r'exp-(\d{1,3})', expenseId)
         if match is None:
-            raise ValueError("The incomeid is malformed")
+            raise ValueError("The expense id is malformed")
         expenseid = int(match.group(1))
 
-        #Create the SQL statment
+        # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
         stmnt = 'UPDATE expense SET source=?, amount=?, date=?, description=?  WHERE _id = ?'
-        #Connects  to the database.
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-            #Execute main SQL Statement
+            # Execute main SQL Statement
             pvalue = (source, amount, date, description, expenseid)
             cur.execute(stmnt, pvalue)
             if cur.rowcount < 1:
                 return None
-            return 'itm-'+str(expenseid)
+            return 'exp-' + str(expenseid)
 
-    def create_expense(self, source, amount, date, description, billimage, userid, eventid):
-        '''
+    def create_expense(self, source, amount, date, description, userid):
+        """
         Create a new user with the data provided as arguments.
         INPUT:
             - source, amount, date, description, bill_image are the
@@ -1075,596 +885,42 @@ class AccountingDatabase(object):
             - returns the id of the created income. None if the user or event
             does not exists.
         raises AccountingDatabaseError if the database could not be modified.
-        '''
+        """
 
-        #Create the SQL statment
-        #SQL STATMENTS FOR KEYS
+        # Create the SQL statement
+        # SQL STATEMENTS FOR KEYS
         keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL to test that the user exists
+        # SQL to test that the user exists
         query1 = 'SELECT * from user WHERE _id = ?'
-        #SQL to test that the event exists
-        query2 = 'SELECT * from event WHERE _id = ?'
-        #SQL Statement for getting the user id given a nickname
-        stmnt = 'INSERT INTO expense (source, amount, date, description, bill_image, ' \
-                'user_id, event_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        #Connects  to the database.
+        # SQL Statement for getting the user id given a nickname
+        stmnt = 'INSERT INTO expense (source, amount, date, description, ' \
+                'user_id) VALUES (?, ?, ?, ?, ?)'
+        # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
-            #Cursor and row initialization
+            # Cursor and row initialization
             con.row_factory = sqlite3.Row
             cur = con.cursor()
-            #Provide support for foreign keys
+            # Provide support for foreign keys
             cur.execute(keys_on)
-
-            #Execute SQL Statement to check if the user exists
+            # Execute SQL Statement to check if the user exists
             pvalue = (userid,)
             cur.execute(query1, pvalue)
             row = cur.fetchone()
             if row is None:
                 return None
 
-            #Execute SQL Statement to check if the event exists
-            pvalue = (eventid,)
-            cur.execute(query2, pvalue)
-            #Extract user id
-            row = cur.fetchone()
-            if row is None:
-                return None
-
-            #If the nickname exists return None
-            pvalue = (source, amount, date, description, billimage,
-                      userid, eventid)
+            # If the nickname exists return None
+            pvalue = (source, amount, date, description,
+                      userid)
             cur.execute(stmnt, pvalue)
             messages = cur.fetchall()
             if len(messages) < 1:
                 return None
 
-            #Execute the statement
+            # Execute the statement
             cur.execute(stmnt, pvalue)
-            #Extract the id of the added message
+            # Extract the id of the added message
             lid = cur.lastrowid
-            #Return the id in
+            # Return the id in
             return str(lid) if lid is not None else None
-
-    #ACCESSING THE EVENT TABLE
-    #Here the helpers that transform database rows into dictionary.
-    def _create_event_object(self, row):
-        '''
-            It takes a database Row and transform it into a python dictionary.
-            Dictionary contains the following keys:
-            - eventid: id of the event (int)
-            - name: event's name
-            - description: event's description
-            - date: event's date
-            - group_id: event's group
-            Note that all values in the returned dictionary are string unless
-            otherwise stated.
-            '''
-        event_id = 'evt-' + str(row['_id'])
-        event_name = row['name']
-        event_description = row['description']
-        event_date= row['date']
-        event_group_id = row['group_id']
-        event = {'_id':event_id, 'name': event_name,
-            'description':event_description, 'date':event_date,
-                'group_id':event_group_id}
-        return event
-    
-    def _create_event_list_object(self, row):
-        '''
-            Same as _create_event_object. However, the result of this method is
-            targeted to create lists. The only keys returned by the objects
-            are eventid, name and date.
-            '''
-        event_id = 'evt-' + str(row['_id'])
-        event_name = row['name']
-        event_date= row['date']
-        event = {'_id':event_id, 'name': event_name,
-            'date':event_date}
-        return event
-    
-    def get_event(self, eventid):
-        '''
-        Return a event with id equals eventid or None if there is no
-        such message.
-        OUTPUT:
-        - The returned value is a dictionary with the same format as
-        described in _create_event_object.
-        INPUT:
-        - The id of the event. Note that eventid is a string with
-        format evt-\d{1,3}.
-        Raises a value error if messageId is not well formed.
-        '''
-        #Extracts the int which is the id for a message in the database
-        match = re.match(r'evt-(\d{1,3})', eventid)
-        if match is None:
-            raise ValueError("The eventid is malformed")
-        eventid = int(match.group(1))
-        
-        #Create the SQL Query
-        keys_on = 'PRAGMA foreign_keys = ON'
-        query = 'SELECT * FROM event WHERE _id = ?'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            #Execute main SQL Statement
-            pvalue = (eventid,)
-            cur.execute(query, pvalue)
-            #Process the response.
-            #Just one row is expected
-            row = cur.fetchone()
-            if row is None:
-                return None
-            #Build the return object
-            return self._create_event_object(row)
-
-    def delete_event(self, _id):
-        '''
-        Delete the user with the _id passed as argument.
-        INPUT:
-        - _id: The event's _id (string)
-        OUTPUT:
-        - True if the event is deleted, False otherwise.
-        '''
-        #Create the SQL Statements
-        #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL Statement for deleting the user information
-        query = 'DELETE FROM event WHERE _id = ?'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            #Execute the statement to delete
-            pvalue = (_id,)
-            cur.execute(query, pvalue)
-            #Check that it has been deleted
-            if cur.rowcount < 1:
-                return False
-            return True
-
-    def modify_event(self, id, event):
-        '''
-        Modify the information of a event.
-        INPUT:
-        
-        Note that all values are string if they are not otherwise indicated.
-        OUPTUT:
-        Return the id of the modified event or None if the id is
-        not stored in the database.
-        raises ValueError if the event argument is not well formed
-        '''
-        #Create the SQL Statements
-        #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL Statement to update the user_profile table
-        query = 'UPDATE event SET name = ?, description = ?, \
-        date = ?, group_id = ? \
-        WHERE _id = ?'
-        #temporal variables
-        _name = event.get('name', None)
-        _description = event.get('description', None)
-        _date = event.get('date', None)
-        _group_id = event.get('group_id', None)
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            #Execute the statement to extract the id associated to a nickname
-            pvalue = (id,)
-            #Only one value expected
-            row = cur.fetchone()
-            #if does not exist, return
-            if row is None:
-                return None
-            else:
-                _id = row["_id"]
-                #execute the main statement
-                pvalue = (_name, _description, _date, _group_id, _id)
-                cur.execute(query, pvalue)
-                #Check that I have modified the user
-                if cur.rowcount < 1:
-                    return None
-                return id
-
-    def create_event(self, id, event):
-        '''
-        Create a new event in the database.
-        
-        raises ValueError if the event argument is not well formed 
-        '''
-        #Create the SQL Statements
-        #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-        #SQL Statement for extracting the userid given a nickname
-
-        #SQL Statement to create the row in user_profile table
-        query = 'INSERT INTO event (_id, name, description, date, group_id \
-        VALUES (?,?,?,?,?)'
-
-        #temporal variables for event profiles
-        _name = event.get('name', None)
-        _description = event.get('description', None)
-        _date = event.get('date', None)
-        _group_id = event.get('group_id', None)
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            lid = cur.lastrowid
-
-            row = cur.fetchone()
-            if row is None:
-                #Execute the statement to extract the id associated to a nickname
-                pvalue = (lid, _name, _description, _date, _group_id)
-                cur.execute(query, pvalue)
-                #We do not do any comprobation and return the nickname
-                return id
-            else:
-                return None
-
-
-    #ACCESSING THE GROUP TABLE
-    #Here the helpers that transform database rows into dictionary.
-    def _create_group_object(self, row):
-        '''
-        It takes a database Row and transform it into a python dictionary.
-        '''
-        return {'group':{'id':row['_id'],
-                                  'name':row['name'],
-                                  'description':row['description']},
-                                  }
-
-    def _create_group_list_object(self, row):
-        '''
-        Same as _create_group_list_object. However, the result of this method is 
-        targeted to create lists. 
-        '''
-        return {'id':row['_id'], 'name':row['name']}
-
-    def get_groups(self):
-        '''
-        Return a list of Groups of the database. Each group is serialized as a 
-        dictionary.
-        Return None if the database has no users. 
-        '''
-        #Create the SQL Statements
-        #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for retrieving the users
-        query = 'SELECT * FROM group'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute main SQL Statement
-            cur.execute(query)
-            #Process the results
-            rows = cur.fetchall()
-            if rows is None:
-                return None
-            #Process the response.
-            groups = []
-            for row in rows:
-                groups.append(self._create_group_object(row))
-            return groups
-
-    def get_group(self, id):
-        '''
-        Return the information about a user stored in the database.
-        INPUT:
-             - id: The nickname of the user to search for.
-        OUTPUT:
-             - dictionary with the format provided in the method: 
-             _create_user_object
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for retrieving the user given a nickname
-        query = 'SELECT _id from group WHERE _id = ?'
-          #SQL Statement for retrieving the user information
-          #Variable to be used in the second query.
-        user_id = None
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute SQL Statement to retrieve the id given a id
-            pvalue = (id,)
-            cur.execute(query, pvalue)
-            #Extract the user id
-            row = cur.fetchone()
-            if row is None:
-                return None
-            _id = row["_id"]
-            row = cur.fetchone()
-            return self._create_user_object(row)
-
-    def delete_group(self, id):
-        '''
-        Delete the user with the _id passed as argument. 
-        INPUT: 
-             - _id: The group's _id (string)
-        OUTPUT: 
-             - True if the group is deleted, False otherwise.
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for deleting the user information
-        query = 'DELETE FROM group WHERE _id = ?'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute the statement to delete 
-            pvalue = (id,)
-            cur.execute(query, pvalue)
-            #Check that it has been deleted
-            if cur.rowcount < 1:
-                return False
-            return True
-
-    def modify_group(self, id, group):
-        '''
-        Modify the information of a user. 
-        INPUT: 
-             
-        Note that all values are string if they are not otherwise indicated.
-        OUPTUT: 
-             Return the id of the modified group or None if the id is 
-             not stored in the database.
-        raises ValueError if the group argument is not well formed
-        '''
-                #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement to update the user_profile table
-        query = 'UPDATE group SET name = ?, description = ? WHERE _id = ?'
-        #temporal variables  
-        _name = group.get('name', None)
-        _description = group.get('description', None)
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute the statement to extract the id associated to a nickname
-            pvalue = (id,)
-            #Only one value expected
-            row = cur.fetchone()
-            #if does not exist, return
-            if row is None:
-                return None      
-            else:
-                _id = row["_id"]
-                #execute the main statement
-                pvalue = (_name, _description,_id)
-                cur.execute(query, pvalue)
-                #Check that I have modified the user
-                if cur.rowcount < 1:
-                    return None
-                return id
-    
-    def create_group(self, id, group):
-        '''
-        Create a new group in the database.
-        
-        raises ValueError if the group argument is not well formed 
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for extracting the userid given a nickname
-        
-          #SQL Statement to create the row in user_profile table
-        query = 'INSERT INTO group (_id, name, description) \
-                  VALUES (?,?,?)'
-        
-        #temporal variables for group profiles
-        _name = group.get('name', None)
-        _description = group.get('description', None)
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            lid = cur.lastrowid   
-            
-            row = cur.fetchone()
-            if row is None: 
-                #Execute the statement to extract the id associated to a nickname
-                pvalue = (lid, _name, _description)
-                cur.execute(query, pvalue)
-                #We do not do any comprobation and return the nickname
-                return id
-            else:    
-                return None
-
-    #ACCESSING THE USERS OF GROUP TABLE
-    #Here the helpers that transform database rows into dictionary.
-    def _create_users_of_group_object(self, row):
-        '''
-        It takes a database Row and transform it into a python dictionary.
-        '''
-        return {'users_of_group':{'user_id':row['user_id'],
-                                  'group_id':row['group_id']}
-                }
-
-    def _create_users_of_group_list_object(self, row):
-        '''
-        Same as _create_group_list_object. However, the result of this method is 
-        targeted to create lists. 
-        '''
-        return {'id':row['_id'], 'name':row['name']}
-
-        return {'user_id':row['user_id'],'group_id':row['group_id']}
-
-    def get_users_of_group(self):
-        '''
-        Return a list of Groups of the database. Each group is serialized as a 
-        dictionary.
-        Return None if the database has no users. 
-        '''
-        #Create the SQL Statements
-        #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for retrieving the users
-        query = 'SELECT * FROM group'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute main SQL Statement
-            cur.execute(query)
-            #Process the results
-            rows = cur.fetchall()
-            if rows is None:
-                return None
-            #Process the response.
-            groups = []
-            for row in rows:
-                groups.append(self._create_group_object(row))
-            return groups
-
-    def get_users_of_group(self, userID, groupID):
-        '''
-        Return the information about a user stored in the database.
-        INPUT:
-             - id: The nickname of the user to search for.
-        OUTPUT:
-             - dictionary with the format provided in the method: 
-             _create_user_object
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for retrieving the user given a nickname
-        query = 'SELECT _id from users_of_table WHERE user_id = ? AND group_id = ?'
-          #SQL Statement for retrieving the user information
-          #Variable to be used in the second query.
-        user_id = None
-        group_id = None
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute SQL Statement to retrieve the id given a id
-            pvalue = (userID, groupID)
-            cur.execute(query, pvalue)
-            #Extract the user id
-            row = cur.fetchone()
-            if row is None:
-                return None
-            user_id = row["user_id"]
-            group_id = row["group_id"]
-            row = cur.fetchone()
-            return self._create_user_object(row)
-
-    def delete_users_of_group(self, userID, groupID):
-        '''
-        Delete the user with the _id passed as argument. 
-        INPUT: 
-             - _id: The group's _id (string)
-        OUTPUT: 
-             - True if the group is deleted, False otherwise.
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for deleting the user information
-        query = 'DELETE FROM group WHERE user_id = ? AND group_id = ?'
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)        
-            #Execute the statement to delete 
-            pvalue = (userID, groupID,)
-            cur.execute(query, pvalue)
-            #Check that it has been deleted
-            if cur.rowcount < 1:
-                return False
-            return True
-    
-    def create_users_of_group(self, userID, groupID):
-        '''
-        Create a new users of group in the database.
-        
-        raises ValueError if the group argument is not well formed 
-        '''
-        #Create the SQL Statements
-          #SQL Statement for activating foreign keys
-        keys_on = 'PRAGMA foreign_keys = ON'
-          #SQL Statement for extracting the userid given a nickname
-        
-          #SQL Statement to create the row in user_profile table
-        query = 'INSERT INTO users_of_group (user_id, group_id) \
-                  VALUES (?,?,?)'
-        
-        #temporal variables for group profiles
-        #Connects to the database. Gets a connection object
-        con = sqlite3.connect(self.db_path)
-        with con:
-            #Cursor and row initialization
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            #Provide support for foreign keys
-            cur.execute(keys_on)
-            lid = cur.lastrowid   
-            row = cur.fetchone()
-            if row is None: 
-                #Execute the statement to extract the id associated to a nickname
-                pvalue = (lid, userID, groupID)
-                cur.execute(query, pvalue)
-                #We do not do any comprobation and return the nickname
-                return userID
-            else:    
-                return None
