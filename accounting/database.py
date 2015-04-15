@@ -1,5 +1,5 @@
 __author__ = 'Pablo Panero'
-__author__ = 'Raúl Jiménez Redondo'
+__author__ = 'Raul Jimenez Redondo'
 
 import sqlite3, sys, re, os
 # Default paths for .db and .sql files to create and populate the database.
@@ -243,7 +243,7 @@ class AccountingDatabase(object):
         return user
 
     # User Table API.
-    def get_user(self, userId):
+    def get_user(self, nickname):
         """
         Return an user with id equals userid or None if there is no
         such user.
@@ -253,15 +253,10 @@ class AccountingDatabase(object):
         INPUT:
             - The id of the user. Note that userid is a string.
         """
-        # Changes the id to integer
-        match = re.match(r'usr-(\d{1,3})', userId)
-        if match is None:
-            raise ValueError("The user id is malformed")
-        userid = int(match.group(1))
 
         # Create the SQL Query
         keys_on = 'PRAGMA foreign_keys = ON'
-        query = 'SELECT * FROM user WHERE _id = ?'
+        query = 'SELECT * FROM user WHERE nickname = ?'
         # Connects to the database. Gets a connection object
         con = sqlite3.connect(self.db_path)
         with con:
@@ -271,7 +266,7 @@ class AccountingDatabase(object):
             # Provide support for foreign keys
             cur.execute(keys_on)
             # Execute main SQL Statement
-            pvalue = (userid,)
+            pvalue = (nickname,)
             cur.execute(query, pvalue)
             # Process the response.
             # Just one row is expected
@@ -281,7 +276,7 @@ class AccountingDatabase(object):
             # Build the return object
             return self._create_user_object(row)
 
-    def delete_user(self, userId):
+    def delete_user(self, nickname):
         """
         Delete the user with id given as parameter.
         INPUT:
@@ -289,15 +284,10 @@ class AccountingDatabase(object):
         OUTPUT:
              True if the user has been deleted, False otherwise.
         """
-        # Changes the id to integer
-        match = re.match(r'usr-(\d{1,3})', userId)
-        if match is None:
-            raise ValueError("The user id is malformed")
-        userid = int(match.group(1))
 
         # Create the SQL statment
         keys_on = 'PRAGMA foreign_keys = ON'
-        stmnt = 'DELETE FROM user WHERE _id = ?'
+        stmnt = 'DELETE FROM user WHERE nickname = ?'
         # connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
@@ -307,7 +297,7 @@ class AccountingDatabase(object):
             # Provide support for foreign keys
             cur.execute(keys_on)
             # Execute main SQL Statement
-            pvalue = (userid,)
+            pvalue = (nickname,)
             cur.execute(stmnt, pvalue)
             # Check that the user has been deleted
             if cur.rowcount < 1:

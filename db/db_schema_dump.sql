@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS user (
   name TEXT NOT NULL,
   balance REAL NOT NULL,
   birthday TEXT,
-  gender TEXT,);
+  gender TEXT);
 
 -- -----------------------------------------------------
 -- Table expense
