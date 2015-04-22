@@ -356,7 +356,7 @@ class AccountingDatabase(object):
         # SQL STATMENTS FOR KEYS
         keys_on = 'PRAGMA foreign_keys = ON'
         # SQL to test that the nickname is not in use
-        query1 = 'SELECT * from user WHERE nickname = ?'
+        query1 = 'SELECT * from user WHERE nickname = ? OR email = ?'
         # SQL Statement for getting the user id given a nickname
         stmnt = 'INSERT INTO user (nickname, email, password, name, balance, ' \
                 'birthday, gender) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -370,7 +370,7 @@ class AccountingDatabase(object):
             # Provide support for foreign keys
             cur.execute(keys_on)
             # If the nickname exists return None
-            pvalue = (nickname,)
+            pvalue = (nickname, email,)
             cur.execute(query1, pvalue)
             users = cur.fetchall()
             if len(users) >= 1:
@@ -500,7 +500,7 @@ class AccountingDatabase(object):
         # user from no income when user exists
         query1 = 'SELECT * FROM user WHERE _id = ?'
         # SQL statement to get incomes
-        stmnt = 'SELECT * FROM incomes WHERE user_id = ?'
+        stmnt = 'SELECT * FROM income WHERE user_id = ?'
 
         # Connects to the database.
         con = sqlite3.connect(self.db_path)

@@ -28,15 +28,16 @@ class UserDbAPITestCase(BaseTestCase):
     user1_gender = 'Male'
     user1_modified_nickname = 'Mystery_mod'
     user1_id = 'usr-1'
-    user1 = {'user_id': user1_id,'nickname': user1_nickname, 'email': user1_email,
+    user1 = {'user_id': user1_id, 'nickname': user1_nickname, 'email': user1_email,
              'password': user1_password, 'name': user1_name, 'balance': user1_balance,
              'birthday': user1_birthday, 'gender': user1_gender}
-    modified_user1 = {'user_id': user1_id,'nickname': user1_modified_nickname, 'email': user1_email,
+    modified_user1 = {'user_id': user1_id, 'nickname': user1_modified_nickname, 'email': user1_email,
                       'password': user1_password, 'name': user1_name, 'balance': user1_balance,
                       'birthday': user1_birthday, 'gender': user1_gender}
     new_user_id = 'usr-2'
     new_user_nickname = 'newbie'
-    new_user = {'user_id': new_user_id, 'nickname': new_user_nickname, 'email': user1_email,
+    new_user_email = 'mystery2@mystery.com'
+    new_user = {'user_id': new_user_id, 'nickname': new_user_nickname, 'email': new_user_email,
                 'password': user1_password, 'name': user1_name, 'balance': user1_balance,
                 'birthday': user1_birthday, 'gender': user1_gender}
 
@@ -104,9 +105,9 @@ class UserDbAPITestCase(BaseTestCase):
         self.assertIsNone(resp2)
         # Check that the user does not have associated any incomes or expenses
         resp3 = db.get_user_incomes(userId=self.user1_id)
-        self.assertEquals(len(resp3), 0)
+        self.assertEquals(resp3, None)
         resp4 = db.get_user_expenses(userId=self.user1_id)
-        self.assertEquals(len(resp4), 0)
+        self.assertEquals(resp4, None)
 
     def test_delete_user_noexistingnickname(self):
         """
@@ -146,7 +147,7 @@ class UserDbAPITestCase(BaseTestCase):
         """
         print '(' + self.test_create_user.__name__ + ')', \
             self.test_create_user.__doc__
-        nickname = db.create_user(self.new_user_nickname, self.user1_email,
+        nickname = db.create_user(self.new_user_nickname, self.new_user_email,
                                   self.user1_password, self.user1_name, self.user1_birthday, self.user1_gender)
         self.assertIsNotNone(nickname)
         self.assertEquals(nickname, self.new_user_nickname)
