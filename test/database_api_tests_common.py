@@ -3,7 +3,7 @@ import unittest, os
 import accounting.database
 
 # Path to the database file, different from the deployment db
-db_path = 'db/accounting_db.db'
+db_path = 'db/accounting.db'
 db = accounting.database.AccountingDatabase(db_path)
 
 

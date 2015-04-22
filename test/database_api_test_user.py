@@ -23,24 +23,26 @@ class UserDbAPITestCase(BaseTestCase):
     user1_email = 'mystery@mystery.com'
     user1_password = 'myspass'
     user1_name = 'Miikka'
-    user1_balance = 1400
+    user1_balance = '1400.0'
     user1_birthday = '20-05-1992'
     user1_gender = 'Male'
     user1_modified_nickname = 'Mystery_mod'
-    user1_id = 1
+    user1_id = 'usr-1'
     user1 = {'user_id': user1_id,'nickname': user1_nickname, 'email': user1_email,
              'password': user1_password, 'name': user1_name, 'balance': user1_balance,
              'birthday': user1_birthday, 'gender': user1_gender}
     modified_user1 = {'user_id': user1_id,'nickname': user1_modified_nickname, 'email': user1_email,
                       'password': user1_password, 'name': user1_name, 'balance': user1_balance,
                       'birthday': user1_birthday, 'gender': user1_gender}
-    new_user_id = 2
+    new_user_id = 'usr-2'
     new_user_nickname = 'newbie'
     new_user = {'user_id': new_user_id, 'nickname': new_user_nickname, 'email': user1_email,
                 'password': user1_password, 'name': user1_name, 'balance': user1_balance,
                 'birthday': user1_birthday, 'gender': user1_gender}
 
     no_user_nickname = 'no_user'
+    no_user_id = 'usr-10'
+    initial_size = 1
 
     @classmethod
     def setUpClass(cls):
@@ -55,7 +57,7 @@ class UserDbAPITestCase(BaseTestCase):
             self.test_users_table_created.__doc__
         # Create the SQL Statement
         keys_on = 'PRAGMA foreign_keys = ON'
-        query1 = 'SELECT * FROM users'
+        query1 = 'SELECT * FROM user'
         # Connects to the database.
         con = sqlite3.connect(db_path)
         with con:
@@ -101,9 +103,9 @@ class UserDbAPITestCase(BaseTestCase):
         resp2 = db.get_user(self.user1_nickname)
         self.assertIsNone(resp2)
         # Check that the user does not have associated any incomes or expenses
-        resp3 = db.get_user_incomes(nickname=self.user1_id)
+        resp3 = db.get_user_incomes(userId=self.user1_id)
         self.assertEquals(len(resp3), 0)
-        resp4 = db.get_user_expenses(nickname=self.user1_id)
+        resp4 = db.get_user_expenses(userId=self.user1_id)
         self.assertEquals(len(resp4), 0)
 
     def test_delete_user_noexistingnickname(self):
@@ -123,17 +125,19 @@ class UserDbAPITestCase(BaseTestCase):
         print '(' + self.test_modify_user.__name__ + ')', \
             self.test_modify_user.__doc__
         # Get the modified user
-        resp = db.modify_user(self.user1_id, self.modified_user1)
+        resp = db.modify_user(self.user1_id, self.user1_modified_nickname, self.user1_email, self.user1_name,
+                              self.user1_balance, self.user1_birthday, self.user1_gender)
         self.assertEquals(resp, self.user1_id)
 
-    def test_modify_user_noexistingnickname(self):
+    def test_modify_user_noexistingid(self):
         """
         Test modify_user with  user Batty (no-existing)
         """
-        print '(' + self.test_modify_user_noexistingnickname.__name__ + ')', \
-            self.test_modify_user_noexistingnickname.__doc__
+        print '(' + self.test_modify_user_noexistingid.__name__ + ')', \
+            self.test_modify_user_noexistingid.__doc__
         # Test with an existing user
-        resp = db.modify_user(self.no_user_nickname, self.user1)
+        resp = db.modify_user(self.no_user_id, self.no_user_nickname, self.user1_email, self.user1_name,
+                              self.user1_balance, self.user1_birthday, self.user1_gender)
         self.assertIsNone(resp)
 
     def test_create_user(self):
@@ -142,7 +146,8 @@ class UserDbAPITestCase(BaseTestCase):
         """
         print '(' + self.test_create_user.__name__ + ')', \
             self.test_create_user.__doc__
-        nickname = db.create_user(self.new_user_nickname, self.new_user)
+        nickname = db.create_user(self.new_user_nickname, self.user1_email,
+                                  self.user1_password, self.user1_name, self.user1_birthday, self.user1_gender)
         self.assertIsNotNone(nickname)
         self.assertEquals(nickname, self.new_user_nickname)
 
@@ -152,7 +157,8 @@ class UserDbAPITestCase(BaseTestCase):
         """
         print '(' + self.test_create_existing_user.__name__ + ')', \
             self.test_create_existing_user.__doc__
-        nickname = db.create_user(self.user1_nickname, self.new_user)
+        nickname = db.create_user(self.user1_nickname, self.user1_email,
+                                  self.user1_password, self.user1_name, self.user1_birthday, self.user1_gender)
         self.assertIsNone(nickname)
 
 

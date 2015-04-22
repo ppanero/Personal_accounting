@@ -3,9 +3,9 @@ __author__ = 'Raul Jimenez Redondo'
 
 import sqlite3, sys, re, os
 # Default paths for .db and .sql files to create and populate the database.
-DEFAULT_DB_PATH = 'db/accounting_db.db'
-DEFAULT_SCHEMA = "db/db_schema_dump.sql"
-DEFAULT_DATA_DUMP = "db/db_data_dump.sql"
+DEFAULT_DB_PATH = 'db/accounting.db'
+DEFAULT_SCHEMA = 'db/db_schema_dump.sql'
+DEFAULT_DATA_DUMP = 'db/db_data_dump.sql'
 
 
 class AccountingDatabase(object):
@@ -228,7 +228,7 @@ class AccountingDatabase(object):
         Note that all values in the returned dictionary are string unless
         otherwise stated.
         """
-        id = 'usr-' + str(row['user_id'])
+        id = 'usr-' + str(row['_id'])
         nickname = row['nickname']
         email = row['email']
         password = row['password']
@@ -372,8 +372,8 @@ class AccountingDatabase(object):
             # If the nickname exists return None
             pvalue = (nickname,)
             cur.execute(query1, pvalue)
-            messages = cur.fetchall()
-            if len(messages) < 1:
+            users = cur.fetchall()
+            if len(users) >= 1:
                 return None
 
             # Execute the statement
@@ -382,7 +382,7 @@ class AccountingDatabase(object):
             # Extract the id of the added user
             lid = cur.lastrowid
             # Return the id in
-            return str(lid) if lid is not None else None
+            return nickname
 
     # ACCESSING THE INCOME TABLE
     # Here the helpers that transform database rows into dictionary.
@@ -522,7 +522,7 @@ class AccountingDatabase(object):
             # Build the return object
             incomes = []
             for row in rows:
-                income = self._create_message_list_object(row)
+                income = self._create_income_list_object(row)
                 incomes.append(income)
             return incomes
 
