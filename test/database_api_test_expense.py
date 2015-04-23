@@ -3,62 +3,50 @@ import sqlite3, unittest
 from .database_api_tests_common import BaseTestCase, db, db_path
 
 
-class UserDbAPITestCase(BaseTestCase):
+class expenseDbAPITestCase(BaseTestCase):
     """
-            The format of the User dictionary is the following:
-            {'nickname': nickname, 'email': email,
-            'password': password, 'name': name, 'balance': balance,
-            'birthday': birthday, 'gender': gender}
+            The format of the expense dictionary is the following:
+            {'source': source, 'amount': amount,
+            'date': date, 'description': description, 'expense_id': expense_id}
             Where:
-            - nickname: nickname of the user
-            - email: electronic mail address of the user
-            - password: password of the user
-            - name: name of the user
-            - balance: monetary balance of the user account
-            - birthday: birthday date of the user
-            - gender: gender of the user
+            - source: source of the expense
+            - amount: monetary amount of the expense
+            - date: date in which the expense was received
+            - description: description of the expense (similar to concept in bank transactions)
+            - user_id: id of the user to whom the expense belongs
     """
-    # the strip function removes the tabs generated.
-    user1_nickname = 'Mystery'
-    user1_email = 'mystery@mystery.com'
-    user1_password = 'myspass'
-    user1_name = 'Miikka'
-    user1_balance = '1400.0'
-    user1_birthday = '20-05-1992'
-    user1_gender = 'Male'
-    user1_modified_nickname = 'Mystery_mod'
-    user1_id = 'usr-1'
-    user1 = {'user_id': user1_id, 'nickname': user1_nickname, 'email': user1_email,
-             'password': user1_password, 'name': user1_name, 'balance': user1_balance,
-             'birthday': user1_birthday, 'gender': user1_gender}
-    modified_user1 = {'user_id': user1_id, 'nickname': user1_modified_nickname, 'email': user1_email,
-                      'password': user1_password, 'name': user1_name, 'balance': user1_balance,
-                      'birthday': user1_birthday, 'gender': user1_gender}
-    new_user_id = 'usr-2'
-    new_user_nickname = 'newbie'
-    new_user_email = 'mystery2@mystery.com'
-    new_user = {'user_id': new_user_id, 'nickname': new_user_nickname, 'email': new_user_email,
-                'password': user1_password, 'name': user1_name, 'balance': user1_balance,
-                'birthday': user1_birthday, 'gender': user1_gender}
-
-    no_user_nickname = 'no_user'
-    no_user_id = 'usr-10'
+    expense1_source = 'Food'
+    expense1_amount = '30.74'
+    expense1_date = '10-08-2014'
+    expense1_description = 'Bought food at tokmanni'
+    expense1_user_id = 'usr-1'
+    expense1_id = 'exp-1'
+    expense1 = {'_id': expense1_id, 'source': expense1_source, 'amount': expense1_amount,
+               'date': expense1_date, 'description': expense1_description, 'user_id': expense1_user_id}
+    expense1_source_modified = 'Skates'
+    expense1_description_modified = 'Bought ice skates at intersport'
+    modified_expense1 = {'_id': expense1_id, 'source': expense1_source_modified, 'amount': expense1_amount,
+                        'date': expense1_date, 'description': expense1_description_modified, 'user_id': expense1_user_id}
+    new_expense_id = 'exp-2'
+    new_expense = {'_id': new_expense_id, 'source': expense1_source, 'amount': expense1_amount,
+                  'date': expense1_date, 'description': expense1_description, 'user_id': expense1_user_id}
+    no_expense_id = 'exp-10'
     initial_size = 1
 
     @classmethod
     def setUpClass(cls):
         print "Testing ", cls.__name__
 
-    def test_users_table_created(self):
+    def test_expense_table_created(self):
         """
-        Checks that the table initially contains 1 users (check
+        Checks that the table initially contains 1 expenses (check
         forum_data_dump.sql)
         """
-        print '(' + self.test_users_table_created.__name__ + ')', \
-            self.test_users_table_created.__doc__
+        print '(' + self.test_expense_table_created.__name__ + ')', \
+            self.test_expense_table_created.__doc__
         # Create the SQL Statement
         keys_on = 'PRAGMA foreign_keys = ON'
-        query1 = 'SELECT * FROM user'
+        query1 = 'SELECT * FROM expense'
         # Connects to the database.
         con = sqlite3.connect(db_path)
         with con:
@@ -69,98 +57,87 @@ class UserDbAPITestCase(BaseTestCase):
             cur.execute(keys_on)
             # Execute main SQL Statement
             cur.execute(query1)
-            users = cur.fetchall()
+            expenses = cur.fetchall()
             # Assert
-            self.assertEquals(len(users), self.initial_size)
+            self.assertEquals(len(expenses), self.initial_size)
         if con:
             con.close()
 
-    def test_get_user(self):
+    def test_get_expense(self):
         """
-        Test get_user with id Mystery and HockeyFan
+        Test get_expense with id Mystery and HockeyFan
         """
-        print '(' + self.test_get_user.__name__ + ')', \
-            self.test_get_user.__doc__
-        # Test with an existing user
-        user = db.get_user(self.user1_nickname)
-        self.assertDictContainsSubset(user, self.user1)
+        print '(' + self.test_get_expense.__name__ + ')', \
+            self.test_get_expense.__doc__
+        # Test with an existing expense
+        expense = db.get_expense(self.expense1_id)
+        self.assertDictContainsSubset(expense, self.expense1)
 
-    def test_get_user_noexistingnickname(self):
-        print '(' + self.test_get_user_noexistingnickname.__name__ + ')', \
-            self.test_get_user_noexistingnickname.__doc__
-        # Test with an existing user
-        user = db.get_user(self.no_user_nickname)
-        self.assertIsNone(user)
+    def test_get_expense_noexistingid(self):
+        print '(' + self.test_get_expense_noexistingid.__name__ + ')', \
+            self.test_get_expense_noexistingid.__doc__
+        # Test with an existing expense
+        expense = db.get_expense(self.no_expense_id)
+        self.assertIsNone(expense)
 
-    def test_delete_user(self):
+    def test_delete_expense(self):
         """
-        Test that the user Mystery is deleted
+        Test that the expense Mystery is deleted
         """
-        print '(' + self.test_delete_user.__name__ + ')', \
-            self.test_delete_user.__doc__
-        resp = db.delete_user(self.user1_nickname)
+        print '(' + self.test_delete_expense.__name__ + ')', \
+            self.test_delete_expense.__doc__
+        resp = db.delete_expense(self.expense1_id)
         self.assertTrue(resp)
-        # Check that the users has been really deleted through a get
-        resp2 = db.get_user(self.user1_nickname)
+        # Check that the expenses has been really deleted through a get
+        resp2 = db.get_expense(self.expense1_id)
         self.assertIsNone(resp2)
-        # Check that the user does not have associated any incomes or expenses
-        resp3 = db.get_user_incomes(userId=self.user1_id)
-        self.assertEquals(resp3, None)
-        resp4 = db.get_user_expenses(userId=self.user1_id)
-        self.assertEquals(resp4, None)
 
-    def test_delete_user_noexistingnickname(self):
+    def test_delete_expense_noexistingid(self):
         """
-        Test delete_user with  Batty (no-existing)
+        Test delete_expense with  Batty (no-existing)
         """
-        print '(' + self.test_delete_user_noexistingnickname.__name__ + ')', \
-            self.test_delete_user_noexistingnickname.__doc__
-        # Test with an existing user
-        resp = db.delete_user(self.no_user_nickname)
+        print '(' + self.test_delete_expense_noexistingid.__name__ + ')', \
+            self.test_delete_expense_noexistingid.__doc__
+        # Test with an existing expense
+        resp = db.delete_expense(self.no_expense_id)
         self.assertFalse(resp)
 
-    def test_modify_user(self):
+    def test_modify_expense(self):
         """
-        Test that the user Mystery is modifed
+        Test that the expense Mystery is modifed
         """
-        print '(' + self.test_modify_user.__name__ + ')', \
-            self.test_modify_user.__doc__
-        # Get the modified user
-        resp = db.modify_user(self.user1_id, self.user1_modified_nickname, self.user1_email, self.user1_name,
-                              self.user1_balance, self.user1_birthday, self.user1_gender)
-        self.assertEquals(resp, self.user1_id)
+        print '(' + self.test_modify_expense.__name__ + ')', \
+            self.test_modify_expense.__doc__
+        # Get the modified expense
+        resp = db.modify_expense(self.expense1_id, self.expense1_source_modified, self.expense1_amount, self.expense1_date,
+                                self.expense1_description_modified)
+        self.assertEquals(resp, self.expense1_id)
 
-    def test_modify_user_noexistingid(self):
+    def test_modify_expense_noexistingid(self):
         """
-        Test modify_user with  user Batty (no-existing)
+        Test modify_expense with  expense Batty (no-existing)
         """
-        print '(' + self.test_modify_user_noexistingid.__name__ + ')', \
-            self.test_modify_user_noexistingid.__doc__
-        # Test with an existing user
-        resp = db.modify_user(self.no_user_id, self.no_user_nickname, self.user1_email, self.user1_name,
-                              self.user1_balance, self.user1_birthday, self.user1_gender)
+        print '(' + self.test_modify_expense_noexistingid.__name__ + ')', \
+            self.test_modify_expense_noexistingid.__doc__
+        # Test with an existing expense
+        resp = db.modify_expense(self.no_expense_id, self.expense1_source_modified, self.expense1_amount, self.expense1_date,
+                                self.expense1_description_modified)
         self.assertIsNone(resp)
 
-    def test_create_user(self):
+    def test_create_expense(self):
         """
-        Test that I can add new users
+        Test that I can add new expenses
         """
-        print '(' + self.test_create_user.__name__ + ')', \
-            self.test_create_user.__doc__
-        nickname = db.create_user(self.new_user_nickname, self.new_user_email,
-                                  self.user1_password, self.user1_name, self.user1_birthday, self.user1_gender)
-        self.assertIsNotNone(nickname)
-        self.assertEquals(nickname, self.new_user_nickname)
+        print '(' + self.test_create_expense.__name__ + ')', \
+            self.test_create_expense.__doc__
+        id = db.create_expense(self.expense1_source, self.expense1_amount, self.expense1_date,
+                              self.expense1_description, self.expense1_user_id)
+        self.assertIsNotNone(id)
+        self.assertEquals(id, self.new_expense_id)
 
-    def test_create_existing_user(self):
-        """
-        Test that I cannot add two users with the same name
-        """
-        print '(' + self.test_create_existing_user.__name__ + ')', \
-            self.test_create_existing_user.__doc__
-        nickname = db.create_user(self.user1_nickname, self.user1_email,
-                                  self.user1_password, self.user1_name, self.user1_birthday, self.user1_gender)
-        self.assertIsNone(nickname)
+    """
+    The case of creating an exiting expense is not tested, because an expense can be created multiple times for the same user.
+    """
 
 
 if __name__ == '__main__':

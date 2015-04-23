@@ -667,10 +667,10 @@ class AccountingDatabase(object):
         expense_id = 'exp-' + str(row['_id'])
         expense_user_id = 'usr-' + str(row['user_id'])
         expense_source = row['source']
-        expense_amount = row['amount']
+        expense_amount = str(row['amount'])
         expense_description = row['description']
         expense_date = row['date']
-        expense = {'expense_id': expense_id, 'user': expense_user_id,
+        expense = {'_id': expense_id, 'user_id': expense_user_id,
                    'source': expense_source, 'amount': expense_amount,
                    'description': expense_description, 'date': expense_date}
         return expense
@@ -860,7 +860,7 @@ class AccountingDatabase(object):
                 return None
             return 'exp-' + str(expenseid)
 
-    def create_expense(self, source, amount, date, description, userid):
+    def create_expense(self, source, amount, date, description, userId):
         """
         Create a new user with the data provided as arguments.
         INPUT:
@@ -883,6 +883,11 @@ class AccountingDatabase(object):
         # SQL Statement for getting the user id given a nickname
         stmnt = 'INSERT INTO expense (source, amount, date, description, ' \
                 'user_id) VALUES (?, ?, ?, ?, ?)'
+        # Extracts the int which is the id of the user in the database
+        match = re.match(r'usr-(\d{1,3})', userId)
+        if match is None:
+            raise ValueError("The user id is malformed")
+        userid = int(match.group(1))
         # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
@@ -898,17 +903,11 @@ class AccountingDatabase(object):
             if row is None:
                 return None
 
-            # If the nickname exists return None
             pvalue = (source, amount, date, description,
                       userid)
-            cur.execute(stmnt, pvalue)
-            messages = cur.fetchall()
-            if len(messages) < 1:
-                return None
-
             # Execute the statement
             cur.execute(stmnt, pvalue)
             # Extract the id of the added message
             lid = cur.lastrowid
             # Return the id in
-            return str(lid) if lid is not None else None
+            return 'exp-'+str(lid) if lid is not None else None
