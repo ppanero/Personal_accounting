@@ -395,17 +395,16 @@ class AccountingDatabase(object):
           - amount: income's amount (REAL)
           - description: income's description
           - user_id: income's user
-          - event_id: income's event
           - date: income's date
 
         """
         income_id = 'inc-' + str(row['_id'])
-        income_user_id = 'inc-' + str(row['user_id'])
+        income_user_id = 'usr-' + str(row['user_id'])
         income_source = row['source']
         income_amount = str(row['amount'])
         income_description = row['description']
         income_date = row['date']
-        income = {'income_id': income_id, 'user': income_user_id,
+        income = {'_id': income_id, 'user_id': income_user_id,
                   'source': income_source, 'amount': income_amount,
                   'description': income_description, 'date': income_date}
         return income
@@ -596,7 +595,7 @@ class AccountingDatabase(object):
                 return None
             return 'inc-' + str(incomeid)
 
-    def create_income(self, source, amount, date, description, userid):
+    def create_income(self, source, amount, date, description, userId):
         """
         Create a new user with the data provided as arguments.
         INPUT:
@@ -620,6 +619,12 @@ class AccountingDatabase(object):
         stmnt = 'INSERT INTO income (source, amount, date, description, ' \
                 'user_id) VALUES (?, ?, ?, ?, ?)'
 
+        # Extracts the int which is the id of the user in the database
+        match = re.match(r'usr-(\d{1,3})', userId)
+        if match is None:
+            raise ValueError("The user id is malformed")
+        userid = int(match.group(1))
+
         # Connects  to the database.
         con = sqlite3.connect(self.db_path)
         with con:
@@ -635,21 +640,14 @@ class AccountingDatabase(object):
             row = cur.fetchone()
             if row is None:
                 return None
-
-            # If the nickname exists return None
             pvalue = (source, amount, date, description,
                       userid)
-            cur.execute(stmnt, pvalue)
-            messages = cur.fetchall()
-            if len(messages) < 1:
-                return None
-
             # Execute the statement
             cur.execute(stmnt, pvalue)
             # Extract the id of the added message
             lid = cur.lastrowid
             # Return the id in
-            return str(lid) if lid is not None else None
+            return 'inc-'+str(lid) if lid is not None else None
 
     # ACCESSING THE EXPENSE TABLE
     # Here the helpers that transform database rows into dictionary.
