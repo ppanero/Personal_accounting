@@ -67,8 +67,8 @@ def get(self):
 
     Semantic descriptions used in items: nickname, registrationdate
     Link relations used in links: messages-all
-    Semantic descriptors used in template: gender, nationality, age, nickname, firstName,
-    lastName, email, birthday
+    Semantic descriptors used in template: gender, age, nickname, firstName,
+    email, birthday, password, balance
 
     NOTE:
     In this case, we extract addressLocality and addressCountry from address
@@ -92,16 +92,16 @@ def get(self):
          "value" : "", "required":True},
         {"prompt" : "Insert user address", "name" : "gender",
          "object" : {}, "required":False},
-        {"prompt" : "Insert user avatar", "name" : "nationality",
-         "value" : "", "required":False},
         {"prompt" : "Insert user email", "name" : "firstName",
-         "value" : "", "required":False},
-        {"prompt" : "Insert user familyName", "name" : "lastName",
          "value" : "", "required":False},
         {"prompt" : "Insert user gender", "name" : "email",
          "value" : "", "required":False},
         {"prompt" : "Insert user givenName", "name" : "birthday",
          "value" : "", "required":False}]
+         {"prompt" : "Insert user password", "name" : "password",
+         "value" : "", "required":False},
+         {"prompt" : "Insert user balance", "name" : "balance",
+         "value" : "", "required":False},
     }
     #Create the items
     items = []
@@ -133,8 +133,9 @@ def post(self):
 
     The body should be a Collection+JSON template.         
     Semantic descriptors used in template: gender(mandatory),
-    nationality(mandatory), nickname(mandatory), firstName(mandatory),
-    lastName(mandatory), email(mandatory), birthday(mandatory).
+    nickname(mandatory), firstName(mandatory),
+    email(mandatory), birthday(mandatory),
+    password(mandatory), balance()mandatory.
 
     OUTPUT: 
     Returns 201 + the url of the new resource in the Location header
@@ -148,8 +149,8 @@ def post(self):
 
     The database append_user receives a dictionary with the format:
     {'public_profile':{'nickname':''
-                       'gender':'','nationality':'','birthday':''},
-     'restricted_profile':{'firstname':'','lastname':'','email':''}
+                       'gender':'','birthday':''},
+     'restricted_profile':{'firstname':'','email':'','password':'','balance':''}
         }
     """
     #PARSE THE REQUEST:
@@ -166,9 +167,9 @@ def post(self):
 
     _nickname = None
     _gender = None
-    _nationality = None
+    _balance = None
     _firstname = None
-    _lastname = None
+    _password = None
     _birthday = None
     _email = None
    
@@ -180,18 +181,18 @@ def post(self):
             _nickname = d['value']
         elif d['name'] == "gender":
             _gender = d['value']
-        elif d['name'] == "nationality":
-            _nationality = d['value']
+        elif d['name'] == "password":
+            _password = d['value']
         elif d['name'] == "firstname":
             _firstname = d['value']
         elif d['name'] == "birthday":
             _birthday = d['value']
         elif d['name'] == "email":
             _email = d['value']
-        elif d['name'] == "lastname":
-            _lastname = d['value']
-    if not _birthday or not _email or not _lastname or \
-    not _gender or not _firstname or not _nickname or not _nationality:
+        elif d['name'] == "balance":
+            _balance = d['value']
+    if not _birthday or not _email or not _balance or \
+    not _gender or not _firstname or not _nickname or not _password:
         return create_error_response(400, "Wrong request format",
                                           "Be sure you include all mandatory"\
                                           "properties",
@@ -204,9 +205,10 @@ def post(self):
                                           "User")
 
     user =  {'public_profile':{'nickname': _nickname,
-                               'gender':_gender,'nationality':_nationality, 'birthday':_birthday},
+                               'gender':_gender, 'birthday':_birthday},
              'restricted_profile':{'firstname':_firstname,
-                                  'lastname':_lastname,
+                                  'password':_password,
+                                  'balance':_balance
                                   'email':_email}
     }
     
@@ -263,8 +265,9 @@ class User(Resource):
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
 	    {'public_profile':{'nickname':''
-	                       'gender':'','nationality':'','birthday':''},
-	     'restricted_profile':{'firstname':'','lastname':'','email':''}
+	                       'gender':'','birthday':''},
+	     'restricted_profile':{'firstname':'','email':'','password':''
+         ,'balance':''}
 	        }
 
         """
@@ -381,7 +384,7 @@ class UserPublic(Resource):
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
 	    {'public_profile':{'nickname':''
-	                       'gender':'','nationality':'','birthday':''},
+	                       'gender':'','birthday':''},
 	        }
 
         """
@@ -419,17 +422,12 @@ class UserPublic(Resource):
 
         envelope['nickname'] = nickname        
         envelope['gender'] = user_db['public_profile']['gender']
-        envelope['nationality'] = user_db['public_profile']['nationality']
         envelope['birthday'] = user_db['public_profile']['birthday']
         envelope['template'] = { "data" : [ 
                                             {"prompt" : "Insert gender text",
                                              "name" : "gender",
                                              "value" : "",
                                              "required":True}, 
-                                            {"prompt" : "Insert nationality file name",
-                                             "name" : "nationality",
-                                             "value" : "",
-                                             "required":True},
                                              {"prompt" : "Insert birthday file name",
                                              "name" : "birthday",
                                              "value" : "",
@@ -502,29 +500,26 @@ class UserPublic(Resource):
             data = input['template']['data']
             _gender = None
             _birthday = None
-            _nationality = None
             for d in data: 
                 #This code has a bad performance. We write it like this for
                 #simplicity. Another alternative should be used instead.
                 if d['name'] == "birthday":
 	                _birthday ["birthday"] = d['value']
-                elif d['name'] == "nationality":
-	                _nationality ["nationality"] = d['value']
                 elif d['name'] == "gender":
 	                _gender ["gender"] = d['value']
             #CHECK THAT DATA RECEIVED IS CORRECT
-            if not _gender or not _birthday or not _nationality:
+            if not _gender or not _birthday:
                 return create_error_response(400, "Wrong request format",
-                                             "Be sure you include gender, nationality and birthday",
+                                             "Be sure you include gender and birthday",
                                              "User_public")
         except: 
-            #This is launched if either gender or nationality or birthday does not exist or the 
+            #This is launched if either gender or birthday does not exist or the 
             #template.data is not there. 
             return create_error_response(400, "Wrong request format",
-                                         "Be sure you include gender, nationality and birthday",
+                                         "Be sure you include gender and birthday",
                                           "User_public")
         else:
-            user = {'public_profile':{'gender':_gender,'nationality':_nationality,'birthday':_birthday}}
+            user = {'public_profile':{'gender':_gender,'birthday':_birthday}}
             if not g.db.modify_user(nickname, user):
                 return NotFound()
             return '', 204
@@ -565,11 +560,11 @@ class UserRestricted(Resource):
         * Profile: 
             http://schema.org/Person
         Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, lastname, email.
+        Semantic descriptors used: firstname, balance, password, email.
 
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
         }
         
@@ -623,7 +618,8 @@ class UserRestricted(Resource):
         
         envelope['email'] = user_db['restricted_profile']['email']
         envelope['firstname'] = user_db['restricted_profile']['firstname']
-        envelope['lastname'] = user_db['restricted_profile']['lastname']
+        envelope['balance'] = user_db['restricted_profile']['balance']
+        envelope['password'] = user_db['restricted_profile']['password']
         envelope['template'] = { "data" : [ 
                                            {"prompt" : "Insert user email",
                                              "name" : "email",
@@ -633,8 +629,12 @@ class UserRestricted(Resource):
                                              "name" : "firstname",
                                              "value" : "",
                                              "required":True},
-                                            {"prompt" : "Insert user lastname",
-                                             "name" : "lastname",
+                                            {"prompt" : "Insert user password",
+                                             "name" : "password",
+                                             "value" : "",
+                                             "required":True},
+                                             {"prompt" : "Insert user balance",
+                                             "name" : "balance",
                                              "value" : "",
                                              "required":True},
                                         ] 
@@ -656,7 +656,7 @@ class UserRestricted(Resource):
 
         The body should be a Collection+JSON template.         
         Semantic descriptors used in template: email(mandatory),
-        firstname(mandatory), lastname(mandatory).
+        firstname(mandatory), password(mandatory), balance(mandatory).
 
         OUTPUT: 
         Return 204 if the restricted profile could be modified
@@ -668,7 +668,7 @@ class UserRestricted(Resource):
         NOTE:
 
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
 
 
@@ -713,13 +713,15 @@ class UserRestricted(Resource):
         #generation expressions
             if d['name'] == "email":
                 _temp_dictionary ["email"] = d['value']
-            elif d['name'] == "lastName":
-                _temp_dictionary ["lastname"] = d['value']
+            elif d['name'] == "password":
+                _temp_dictionary ["password"] = d['value']
+            elif d['name'] == "balance":
+            _temp_dictionary ["balance"] = d['value']
             elif d['name'] == "firstName":
                 _temp_dictionary ["firstname"] = d['value']
 
 
-        for key in ("email", "lastname", "firstname"):
+        for key in ("email", "password", "firstname", "balance"):
             if key not in _temp_dictionary:
                 return create_error_response(400, "Wrong request format",
                                               "Be sure you include all mandatory"\
@@ -727,7 +729,8 @@ class UserRestricted(Resource):
                                               "User_restricted")
              
         user =  {'restricted_profile':{'firstname':_temp_dictionary['firstname'],
-                                       'lastname':_temp_dictionary['lastname'],
+                                       'password':_temp_dictionary['password'],
+                                       'balance':_temp_dictionary['balance'],
                                        'email':_temp_dictionary['email'],
                                        }
                 }
@@ -772,11 +775,11 @@ class Income(Resource):
         * Profile:
             http://schema.org/Person
         Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, lastname, email.
+        Semantic descriptors used: firstname, password, balance, email.
 
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
         }
         """
@@ -844,7 +847,7 @@ class Income(Resource):
 
         The body should be a Collection+JSON template.
         Semantic descriptors used in template: email(mandatory),
-        firstname(mandatory), lastname(mandatory).
+        firstname(mandatory), password(mandatory), balance (mandatory).
 
         OUTPUT:
         Return 204 if the restricted profile could be modified
@@ -856,7 +859,7 @@ class Income(Resource):
         NOTE:
 
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
 
 
@@ -996,11 +999,11 @@ class Expense(Resource):
         * Profile:
             http://schema.org/Person
         Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, lastname, email.
+        Semantic descriptors used: firstname, password, balance, email.
 
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
         }
         """
@@ -1068,7 +1071,7 @@ class Expense(Resource):
 
         The body should be a Collection+JSON template.
         Semantic descriptors used in template: email(mandatory),
-        firstname(mandatory), lastname(mandatory).
+        firstname(mandatory), password(mandatory), balance(mandatory).
 
         OUTPUT:
         Return 204 if the restricted profile could be modified
@@ -1080,7 +1083,7 @@ class Expense(Resource):
         NOTE:
 
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
 
 
@@ -1220,11 +1223,11 @@ class Incomes(Resource):
         * Profile:
             http://schema.org/Person
         Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, lastname, email.
+        Semantic descriptors used: firstname, password, balance, email.
 
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
         }
         """
@@ -1291,8 +1294,8 @@ class Incomes(Resource):
 
         The body should be a Collection+JSON template.
         Semantic descriptors used in template: gender(mandatory),
-        nationality(mandatory), nickname(mandatory), firstName(mandatory),
-        lastName(mandatory), email(mandatory), birthday(mandatory).
+        balance(mandatory), nickname(mandatory), firstName(mandatory),
+        password(mandatory), email(mandatory), birthday(mandatory).
 
         OUTPUT:
         Returns 201 + the url of the new resource in the Location header
@@ -1306,8 +1309,8 @@ class Incomes(Resource):
 
         The database append_user receives a dictionary with the format:
         {'public_profile':{'nickname':''
-                           'gender':'','nationality':'','birthday':''},
-         'restricted_profile':{'firstname':'','lastname':'','email':''}
+                           'gender':'','birthday':''},
+         'restricted_profile':{'firstname':'','email':'','password':'','balance':''}
             }
         """
         #PARSE THE REQUEST:
@@ -1324,9 +1327,9 @@ class Incomes(Resource):
 
         _nickname = None
         _gender = None
-        _nationality = None
+        _password = None
         _firstname = None
-        _lastname = None
+        _balance = None
         _birthday = None
         _email = None
 
@@ -1338,18 +1341,18 @@ class Incomes(Resource):
                 _nickname = d['value']
             elif d['name'] == "gender":
                 _gender = d['value']
-            elif d['name'] == "nationality":
-                _nationality = d['value']
+            elif d['name'] == "password":
+                _password = d['value']
             elif d['name'] == "firstname":
                 _firstname = d['value']
             elif d['name'] == "birthday":
                 _birthday = d['value']
             elif d['name'] == "email":
                 _email = d['value']
-            elif d['name'] == "lastname":
-                _lastname = d['value']
-        if not _birthday or not _email or not _lastname or \
-                not _gender or not _firstname or not _nickname or not _nationality:
+            elif d['name'] == "balance":
+                _balance = d['value']
+        if not _birthday or not _email or not _password or \
+                not _gender or not _firstname or not _nickname or not _balance:
             return create_error_response(400, "Wrong request format",
                                          "Be sure you include all mandatory" \
                                          "properties",
@@ -1362,9 +1365,10 @@ class Incomes(Resource):
                                          "User")
 
         user =  {'public_profile':{'nickname': _nickname,
-                                   'gender':_gender,'nationality':_nationality, 'birthday':_birthday},
+                                   'gender':_gender, 'birthday':_birthday},
                  'restricted_profile':{'firstname':_firstname,
-                                       'lastname':_lastname,
+                                       'password':_password,
+                                       'balance':_balance,
                                        'email':_email}
         }
 
@@ -1414,11 +1418,11 @@ class Expenses(Resource):
         * Profile:
             http://schema.org/Person
         Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, lastname, email.
+        Semantic descriptors used: firstname, password, balance, email.
 
         NOTE: Format of the database
         The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','lastname':'','email':''}
+	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
 	        }
         }
         """
@@ -1485,8 +1489,8 @@ class Expenses(Resource):
 
         The body should be a Collection+JSON template.
         Semantic descriptors used in template: gender(mandatory),
-        nationality(mandatory), nickname(mandatory), firstName(mandatory),
-        lastName(mandatory), email(mandatory), birthday(mandatory).
+        password(mandatory), nickname(mandatory), firstName(mandatory),
+        balance(mandatory), email(mandatory), birthday(mandatory).
 
         OUTPUT:
         Returns 201 + the url of the new resource in the Location header
@@ -1500,8 +1504,8 @@ class Expenses(Resource):
 
         The database append_user receives a dictionary with the format:
         {'public_profile':{'nickname':''
-                           'gender':'','nationality':'','birthday':''},
-         'restricted_profile':{'firstname':'','lastname':'','email':''}
+                           'gender':'','birthday':''},
+         'restricted_profile':{'firstname':'','email':'','password':'','balance':''}
             }
         """
         #PARSE THE REQUEST:
@@ -1518,9 +1522,9 @@ class Expenses(Resource):
 
         _nickname = None
         _gender = None
-        _nationality = None
+        _password = None
         _firstname = None
-        _lastname = None
+        _balance = None
         _birthday = None
         _email = None
 
@@ -1532,18 +1536,18 @@ class Expenses(Resource):
                 _nickname = d['value']
             elif d['name'] == "gender":
                 _gender = d['value']
-            elif d['name'] == "nationality":
-                _nationality = d['value']
+            elif d['name'] == "password":
+                _password = d['value']
             elif d['name'] == "firstname":
                 _firstname = d['value']
             elif d['name'] == "birthday":
                 _birthday = d['value']
             elif d['name'] == "email":
                 _email = d['value']
-            elif d['name'] == "lastname":
-                _lastname = d['value']
-        if not _birthday or not _email or not _lastname or \
-                not _gender or not _firstname or not _nickname or not _nationality:
+            elif d['name'] == "_balance":
+                _balance = d['value']
+        if not _birthday or not _email or not _password or \
+                not _gender or not _firstname or not _nickname or not _balance:
             return create_error_response(400, "Wrong request format",
                                          "Be sure you include all mandatory" \
                                          "properties",
@@ -1556,9 +1560,10 @@ class Expenses(Resource):
                                          "User")
 
         user =  {'public_profile':{'nickname': _nickname,
-                                   'gender':_gender,'nationality':_nationality, 'birthday':_birthday},
+                                   'gender':_gender, 'birthday':_birthday},
                  'restricted_profile':{'firstname':_firstname,
-                                       'lastname':_lastname,
+                                       'password':_password,
+                                       'balance':_balance,
                                        'email':_email}
         }
 
