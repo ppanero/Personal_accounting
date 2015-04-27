@@ -2,6 +2,13 @@ accounting/database.py is the database API
 db/db_schema_dump.sql is the schema to dump 
 db/db_data_dump.sql is the data to dump into the database
 
+
+To test the application we should run the app with:
+
+    python -m accounting.resources
+
+Path: http://127.0.0.1:5000/
+
 We have tested our RESTful API using the plugin for Google Chrome DHC - REST/HTTP API Client (https://chrome.google.com/webstore/detail/dhc-resthttp-api-client/aejoelaoggembcahagimdiliamlcdmfm)
 
 We have carried out the following tests:
