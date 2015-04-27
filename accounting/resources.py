@@ -162,9 +162,6 @@ class Users(Resource):
         _email = None
 
         for d in data:
-            # This code has a bad performance. We write it like this for
-            # simplicity. Another alternative should be used instead. E.g.
-            # generation expressions
             if d['name'] == "nickname":
                 _nickname = d['value']
             elif d['name'] == "gender":
@@ -199,7 +196,6 @@ class Users(Resource):
                                        'email': _email}
         }
 
-        # But we are not going to do this exercise
         nickname = g.db.append_user(_nickname, user)
 
         # CREATE RESPONSE AND RENDER
