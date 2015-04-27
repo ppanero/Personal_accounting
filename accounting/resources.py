@@ -162,9 +162,6 @@ class Users(Resource):
         _email = None
 
         for d in data:
-            # This code has a bad performance. We write it like this for
-            # simplicity. Another alternative should be used instead. E.g.
-            # generation expressions
             if d['name'] == "nickname":
                 _nickname = d['value']
             elif d['name'] == "gender":
@@ -199,7 +196,6 @@ class Users(Resource):
                                        'email': _email}
         }
 
-        # But we are not going to do this exercise
         nickname = g.db.append_user(_nickname, user)
 
         # CREATE RESPONSE AND RENDER
@@ -1378,13 +1374,13 @@ api.add_resource(UserPublic, '/accounting/api/users/<nickname>/public_profile/',
 api.add_resource(UserRestricted, '/accounting/api/users/<nickname>/restricted_profile/',
                  endpoint='restricted_profile')
 api.add_resource(Incomes, '/accounting/api/user/<id>/incomes/',
-                 endpoint='user')
-api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
-                 endpoint='user')
-api.add_resource(Income, '/accounting/api/incomes/<id>/',
                  endpoint='incomes')
-api.add_resource(Expense, '/accounting/api/expenses/<id>/',
+api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
                  endpoint='expenses')
+api.add_resource(Income, '/accounting/api/incomes/<id>/',
+                 endpoint='income')
+api.add_resource(Expense, '/accounting/api/expenses/<id>/',
+                 endpoint='expense')
 
 
 # Start the application
