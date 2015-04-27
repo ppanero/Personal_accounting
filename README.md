@@ -6,9 +6,6 @@ We have test our RESTful API using the plugin for Google Chrome DHC - REST/HTTP 
 
 We have carried out the following tests:
 
-use case:
-request:
-
 __USERS__
 
 use case: http://application/vnd.collection+json;127.0.0.1:5000/accounting/api/users/
