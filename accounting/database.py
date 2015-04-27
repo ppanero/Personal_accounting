@@ -242,7 +242,54 @@ class AccountingDatabase(object):
                 'birthday': birthday, 'gender': gender}
         return user
 
+    def _create_user_list_object(self, row):
+        """
+        It takes a database Row and transform it into a python dictionary.
+        Dictionary contains the following keys:
+          - userid: id of the user (int)
+          - nickname: user's nickname
+        Note that all values in the returned dictionary are string unless
+        otherwise stated.
+        """
+        id = 'usr-' + str(row['_id'])
+        nickname = row['nickname']
+        birthday = row['birthday']
+
+        user = {'user_id': id, 'nickname': nickname, 'birthday': birthday}
+        return user
+
     # User Table API.
+    def get_users(self):
+        """
+        Return a list of users in the database
+        OUTPUT:
+            - The returned value is a dictionary with the same format as
+              described in _create_user_list__object.
+        """
+
+        # Create the SQL Query
+        keys_on = 'PRAGMA foreign_keys = ON'
+        query = 'SELECT * FROM user '
+        # Connects to the database. Gets a connection object
+        con = sqlite3.connect(self.db_path)
+        with con:
+            # Cursor and row initialization
+            con.row_factory = sqlite3.Row
+            cur = con.cursor()
+            # Provide support for foreign keys
+            cur.execute(keys_on)
+            # Execute main SQL Statement
+            cur.execute(query)
+            # Process the response.
+            # Just one row is expected
+            rows = cur.fetchall()
+            # Build the return object
+            users = []
+            for row in rows:
+                user = self._create_user_list_object(row)
+                users.append(user)
+            return users
+
     def get_user(self, nickname):
         """
         Return an user with id equals userid or None if there is no
@@ -415,7 +462,7 @@ class AccountingDatabase(object):
         targeted to create lists. The only keys returned by the objects
         are income_id, source, amount and date.
         """
-        item_id = 'inc-' + str(row['item_id'])
+        item_id = 'inc-' + str(row['_id'])
         item_source = row['source']
         item_amount = row['amount']
         item_date = row['date']

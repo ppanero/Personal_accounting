@@ -692,23 +692,10 @@ class UserRestricted(Resource):
 
 
 class Income(Resource):
-    def _isauthorized(self, nickname, authorization):
-        """
-        Check if a user is authorized or not to perform certain operation.
 
-        This is a simple implementation of this method. Just checks that the
-        authorization token is either admin or the nickname of the user to
-        authorize.
+    def get(self, id):
         """
-        if authorization is not None and \
-                (authorization.lower() == "admin" or
-                         authorization.lower() == nickname.lower()):
-            return True
-        return False
-
-    def get(self, id, nickname):
-        """
-        Gets an specific (by id) income. Only authorized users are allowed.
+        Gets an specific (by id) income.
 
         INPUT PARAMETER:
         - id: A string containing the id of the required income.
@@ -722,16 +709,6 @@ class Income(Resource):
          * Media type: Collection+JSON:
          http://amundsen.com/media-types/collection/
         """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
         # PERFORM OPERATIONS
         income_db = g.db.get_income(id)
         if not income_db:
@@ -750,9 +727,6 @@ class Income(Resource):
         # Fill the links
         links['self'] = {'href': api.url_for(Income, id=id),
                          'profile': ACCOUNTING_INCOME_PROFILE}
-        links['parent'] = {'href': api.url_for(User, nickname=nickname),
-                           'profile': ACCOUNTING_USER_PROFILE,
-                           'type': HAL}
 
         envelope['_id'] = id
         envelope['user_id'] = income_db['user_id']
@@ -772,9 +746,9 @@ class Income(Resource):
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_INCOME_PROFILE)
 
-    def put(self, id, nickname):
+    def put(self, id):
         """
-        Modifies an existing user. Only authorized users are allowed.
+        Modifies an existing user.
 
         ENTITY BODY INPUT FORMAT:
         - id: id of the income to modify.
@@ -789,16 +763,6 @@ class Income(Resource):
         Return 400 if the body is not well formed
         Return 415 if it receives a media type != application/json
         """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
         # Check user exists:
         income_db = g.db.get_income(id)
         if not income_db:
@@ -849,7 +813,7 @@ class Income(Resource):
         # CREATE RESPONSE AND RENDER
         return Response(status=204)
 
-    def delete(self, id, nickname):
+    def delete(self, id):
         """
         Delete a income in the system if the user is authorized to do so.
         A user is authorized if the 'Authorization' header contains either
@@ -871,42 +835,23 @@ class Income(Resource):
         # PEROFRM OPERATIONS
         # Try to delete the user. If it could not be deleted, the database
         # returns None.
-        if self._isauthorized(nickname, authorization):
-            if g.db.delete_income(id):
-                # RENDER RESPONSE
-                return '', 204
-            else:
-                # GENERATE ERROR RESPONSE
-                return create_error_response(404, "Unknown income",
-                                             "There is no a income with id %s"
-                                             % id,
-                                             "Income")
+
+        if g.db.delete_income(id):
+            # RENDER RESPONSE
+            return '', 204
         else:
-            # User is not authorized
-            return create_error_response(401, "Unauthorized",
-                                         "Please, provide credentials",
-                                         "User")
+            # GENERATE ERROR RESPONSE
+            return create_error_response(404, "Unknown income",
+                                         "There is no a income with id %s"
+                                         % id,
+                                         "Income")
 
 
 class Expense(Resource):
-    def _isauthorized(self, nickname, authorization):
-        """
-        Check if a user is authorized or not to perform certain operation.
 
-        This is a simple implementation of this method. Just checks that the
-        authorization token is either admin or the nickname of the user to
-        authorize.
+    def get(self, id):
         """
-        if authorization is not None and \
-                (authorization.lower() == "admin" or
-                         authorization.lower() == nickname.lower()):
-            return True
-        return False
-
-    def get(self, id, nickname):
-        """
-        Gets an specific (by id) expense. Only authorized users
-        are allowed to modify it.
+        Gets an specific (by id) expense.
 
         INPUT PARAMETER:
         - id: A string containing the id of the required expense.
@@ -920,16 +865,6 @@ class Expense(Resource):
          * Media type: Collection+JSON:
          http://amundsen.com/media-types/collection/
         """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
         # PERFORM OPERATIONS
         expense_db = g.db.get_expense(id)
         if not expense_db:
@@ -948,9 +883,6 @@ class Expense(Resource):
         # Fill the links
         links['self'] = {'href': api.url_for(Expense, id=id),
                          'profile': ACCOUNTING_EXPENSE_PROFILE}
-        links['parent'] = {'href': api.url_for(User, nickname=nickname),
-                           'profile': ACCOUNTING_USER_PROFILE,
-                           'type': HAL}
 
         envelope['_id'] = id
         envelope['user_id'] = expense_db['user_id']
@@ -970,9 +902,9 @@ class Expense(Resource):
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_EXPENSE_PROFILE)
 
-    def put(self, id, nickname):
+    def put(self, id):
         """
-        Modifies an existing expense. Only authorized users are allowed.
+        Modifies an existing expense.
 
         ENTITY BODY INPUT FORMAT:
         - id: id of the expense to modify.
@@ -986,16 +918,6 @@ class Expense(Resource):
         Return 400 if the body is not well formed
         Return 415 if it receives a media type != application/json
         """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
         # Check user exists:
         expense_db = g.db.get_expense(id)
         if not expense_db:
@@ -1046,7 +968,7 @@ class Expense(Resource):
         # CREATE RESPONSE AND RENDER
         return Response(status=204)
 
-    def delete(self, id, nickname):
+    def delete(self, id):
         """
         Delete a expense in the system if the user is authorized to do so.
         A user is authorized if the 'Authorization' header contains either
@@ -1058,31 +980,18 @@ class Expense(Resource):
         If the user is not authorized return 401
         If the id does not exist return 404
         """
-        # PERFORM AUTHORIZATION CHECKING
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-
         # PEROFRM OPERATIONS
         # Try to delete the user. If it could not be deleted, the database
         # returns None.
-        if self._isauthorized(nickname, authorization):
-            if g.db.delete_expense(id):
-                # RENDER RESPONSE
-                return '', 204
-            else:
-                # GENERATE ERROR RESPONSE
-                return create_error_response(404, "Unknown expense",
-                                             "There is no a expense with id %s"
-                                             % id,
-                                             "expense")
+        if g.db.delete_expense(id):
+            # RENDER RESPONSE
+            return '', 204
         else:
-            # User is not authorized
-            return create_error_response(401, "Unauthorized",
-                                         "Please, provide credentials",
-                                         "User")
+            # GENERATE ERROR RESPONSE
+            return create_error_response(404, "Unknown expense",
+                                         "There is no a expense with id %s"
+                                         % id,
+                                         "expense")
 
 
 class Incomes(Resource):
@@ -1100,7 +1009,7 @@ class Incomes(Resource):
             return True
         return False
 
-    def get(self, id):
+    def get(self, uid):
         """
         Gets a list of all the incomes of the specified user in the database. It returns a status
         code 200.
@@ -1115,12 +1024,12 @@ class Incomes(Resource):
         """
         # PERFORM OPERATIONS
         # Create the messages list
-        user_incomes_db = g.db.get_user_incomes(id)
+        user_incomes_db = g.db.get_user_incomes(uid)
 
         if user_incomes_db is None:
             return create_error_response(404, "Unknown user",
                                          "There is no a user with id %s"
-                                         % id,
+                                         %uid,
                                          "Incomes")
 
         # FILTER AND GENERATE THE RESPONSE
@@ -1146,13 +1055,13 @@ class Incomes(Resource):
             _source = user_income['source']
             _amount = user_income['amount']
             _date = user_income['date']
-            _url = api.url_for(Incomes, id=id)
+            _url = api.url_for(Incomes, id=uid)
             user_income = {}
             user_income['href'] = _url
             user_income['read-only'] = True
             user_income['data'] = []
             value = {'income_id': _id, 'source': _source,
-                     'amount': _amount, 'date': _date, 'user_id': id}
+                     'amount': _amount, 'date': _date, 'user_id': uid}
             user_income['data'].append(value)
             items.append(user_income)
         collection['items'] = items
@@ -1378,13 +1287,13 @@ api.add_resource(UserPublic, '/accounting/api/users/<nickname>/public_profile/',
 api.add_resource(UserRestricted, '/accounting/api/users/<nickname>/restricted_profile/',
                  endpoint='restricted_profile')
 api.add_resource(Incomes, '/accounting/api/user/<id>/incomes/',
-                 endpoint='user')
-api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
-                 endpoint='user')
-api.add_resource(Income, '/accounting/api/incomes/<id>/',
                  endpoint='incomes')
-api.add_resource(Expense, '/accounting/api/expenses/<id>/',
+api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
                  endpoint='expenses')
+api.add_resource(Income, '/accounting/api/incomes/<id>/',
+                 endpoint='income')
+api.add_resource(Expense, '/accounting/api/expenses/<id>/',
+                 endpoint='expense')
 
 
 # Start the application

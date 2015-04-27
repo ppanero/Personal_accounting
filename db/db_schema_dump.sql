@@ -3,7 +3,7 @@ BEGIN TRANSACTION;
 -- -----------------------------------------------------
 -- Table user
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS 'user' (
+CREATE TABLE IF NOT EXISTS user (
   _id INTEGER PRIMARY KEY AUTOINCREMENT,
   nickname TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
