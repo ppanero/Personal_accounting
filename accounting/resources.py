@@ -89,13 +89,13 @@ class Users(Resource):
             "data": [
                 {"prompt": "Insert nickname", "name": "nickname",
                  "value": "", "required": True},
-                {"prompt": "Insert user address", "name": "gender",
+                {"prompt": "Insert user gender", "name": "gender",
                  "object": {}, "required": False},
-                {"prompt": "Insert user email", "name": "firstName",
+                {"prompt": "Insert user first name", "name": "firstName",
                  "value": "", "required": False},
-                {"prompt": "Insert user gender", "name": "email",
+                {"prompt": "Insert user email", "name": "email",
                  "value": "", "required": False},
-                {"prompt": "Insert user givenName", "name": "birthday",
+                {"prompt": "Insert user birthday", "name": "birthday",
                  "value": "", "required": False},
                 {"prompt": "Insert user password", "name": "password",
                  "value": "", "required": False},
@@ -188,13 +188,13 @@ class Users(Resource):
                                           Try another one " % _nickname,
                                          "User")
 
-        user = {'public_profile': {'nickname': _nickname,
-                                   'gender': _gender, 'birthday': _birthday},
-                'restricted_profile': {'firstname': _firstname,
-                                       'password': _password,
-                                       'balance': _balance,
-                                       'email': _email}
-        }
+        user = {'nickname': _nickname,
+                'gender': _gender,
+                'birthday': _birthday,
+                'firstname': _firstname,
+                'password': _password,
+                'balance': _balance,
+                'email': _email}
 
         nickname = g.db.append_user(_nickname, user)
 
@@ -254,28 +254,162 @@ class User(Resource):
         envelope = {}
         # Now create the links
         links = {}
-        envelope["_links"] = links
-
-        # Fill the links
-        links['self'] = {'href': api.url_for(User, nickname=nickname),
-                         'profile': ACCOUNTING_USER_PROFILE}
-        links['collection'] = {'href': api.url_for(Users),
-                               'profile': ACCOUNTING_USER_PROFILE,
-                               'type': COLLECTIONJSON}
-        links['public-data'] = {
-            'href': api.url_for(UserPublic, nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': COLLECTIONJSON}
-        links['restricted-data'] = {
-            'href': api.url_for(UserRestricted, nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': COLLECTIONJSON}
+        
 
         envelope['nickname'] = nickname
+        envelope['id'] = user_db['user_id']
+        envelope['gender'] = user_db['gender']
+        envelope['birthday'] = user_db['birthday']
+        envelope['email'] = user_db['email']
+        envelope['firstname'] = user_db['name']
+        envelope['balance'] = user_db['balance']
+        envelope['password'] = user_db['password']
+        envelope['template'] = {"data": [
+            {"prompt": "Insert gender text",
+             "name": "gender",
+             "value": "",
+             "required": True},
+             {"prompt": "Insert id text",
+             "name": "id",
+             "value": "",
+             "required": True},
+            {"prompt": "Insert birthday file name",
+             "name": "birthday",
+             "value": "",
+             "required": True},
+             {"prompt": "Insert user email",
+             "name": "email",
+             "value": "",
+             "required": True},
+            {"prompt": "Insert user firstname",
+             "name": "firstname",
+             "value": "",
+             "required": True},
+            {"prompt": "Insert user password",
+             "name": "password",
+             "value": "",
+             "required": True},
+            {"prompt": "Insert user balance",
+             "name": "balance",
+             "value": "",
+             "required": True}
+        ]
+        }
+
+
 
 
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_USER_PROFILE)
+
+
+
+    def put(self, nickname):
+        """
+        Modifies the avatar and signature of a user. Only authorized users can
+        make the modifictation
+
+        ENTITY BODY INPUT FORMAT:
+        * Media type: Collection+JSON:
+         http://amundsen.com/media-types/collection/
+         - Extensions: template validation and value-types
+           https://github.com/collection-json/extensions
+        * Profile:
+            http://schema.org/Person
+
+        The body should be a Collection+JSON template.
+        Semantic descriptors used in template: signature, avatar.
+         INPUT PARAMETER:
+        - nickname: A string containing the nickname of the user to modify
+
+        OUTPUT:
+        Returns 204 if the message is modified correctly
+        Returns 400 if the body of the request is not well formed or it is
+        empty.
+        Returns 401 if the user is not authorized
+        Returns 404 if there is no message with messageid
+        Returns 415 if the input is not JSON.
+
+        """
+        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
+        authorization = None
+        try:
+            authorization = request.headers["authorization"]
+        except KeyError:
+            pass
+        if not self._isauthorized(nickname, authorization):
+            return create_error_response(401, "Unauthorized",
+                                         "You should be authorized to edit this data",
+                                         "User_profile")
+
+        # CHECK THAT USER EXISTS
+        user_db = g.db.get_user(nickname)
+        if not user_db:
+            return create_error_response(404, "Unknown user",
+                                         "There is no a user with nickname %s"
+                                         % nickname,
+                                         "User_profile")
+
+        # PARSE THE REQUEST
+        # Extract the request body. In general would be request.data
+        # Since the request is JSON I use request.get_json
+        # get_json returns a python dictionary after serializing the request body
+        # get_json returns None if the body of the request is not formatted
+        # using JSON
+        input = request.get_json(force=True)
+        if not input:
+            return create_error_response(415, "Unsupported Media Type",
+                                         "Use a JSON compatible format",
+                                         "User_profile")
+
+
+        # It throws a BadRequest exception, and hence a 400 code if the JSON is
+        # not wellformed
+        try:
+            data = input['template']['data']
+        except:
+            return create_error_response(400, "Bad format",
+                                         "You must embed the data in a Collection+JSON template",
+                                         "User")
+
+        _temp_dictionary = {}
+        for d in data:
+            # This code has a bad performance. We write it like this for
+            # simplicity. Another alternative should be used instead. E.g.
+            # generation expressions
+
+            if d['name'] == "gender":
+                _temp_dictionary["gender"] = d['value']
+            elif d['name'] == "birthday":
+                _temp_dictionary["birthday"] = d['value']
+            elif d['name'] == "email":
+                _temp_dictionary["email"] = d['value']
+            elif d['name'] == "password":
+                _temp_dictionary["password"] = d['value']
+            elif d['name'] == "balance":
+                _temp_dictionary["balance"] = d['value']
+            elif d['name'] == "firstName":
+                _temp_dictionary["firstname"] = d['value']
+
+        for key in ("gender", "birthday","email", "password", "firstname", "balance"):
+            if key not in _temp_dictionary:
+                return create_error_response(400, "Wrong request format",
+                                             "Be sure you include all mandatory" \
+                                             "properties: " + key + " missing",
+                                             "User_profile")
+
+        user = {'gender': _temp_dictionary['gender'],
+                'birthday': _temp_dictionary['birthday'],
+                'firstname': _temp_dictionary['firstname'],
+                'password': _temp_dictionary['password'],
+                'balance': _temp_dictionary['balance'],
+                'email': _temp_dictionary['email'],
+        }
+        g.db.modify_user(nickname, user)
+
+        # CREATE RESPONSE AND RENDER
+        return Response(status=204)
+
 
     def delete(self, nickname):
         """
@@ -314,378 +448,6 @@ class User(Resource):
             return create_error_response(401, "Unauthorized",
                                          "Please, provide credentials",
                                          "User")
-
-
-class UserPublic(Resource):
-    def _isauthorized(self, nickname, authorization):
-        """
-        Check if a user is authorized or not to perform certain operation.
-
-        This is a simple implementation of this method. Just checks that the
-        authorization token is either admin or the nickname of the user to
-        authorize.
-        """
-        if authorization is not None and \
-                (authorization.lower() == "admin" or
-                         authorization.lower() == nickname.lower()):
-            return True
-        return False
-
-    def get(self, nickname):
-        """
-        Gets the public representation of a user.
-
-        INPUT PARAMETER:
-        - nickname: A string containing the nickname of the required user.
-
-        OUTPUT:
-        Return 200 if the nickname exists.
-        Return 404 if the nickname is not stored in the system.
-
-        ENTITY BODY OUTPUT FORMAT:
-         * Media type: Collection+JSON:
-         http://amundsen.com/media-types/collection/
-        * Profile:
-            http://schema.org/Person
-        """
-        # PERFORM OPERATIONS
-        user_db = g.db.get_user(nickname)
-        if not user_db:
-            return create_error_response(404, "Unknown user",
-                                         "There is no a user with nickname %s"
-                                         % nickname,
-                                         "User")
-
-            # FILTER AND GENERATE RESPONSE
-            # Create the envelope:
-        envelope = {}
-        # Now create the links
-        links = {}
-        envelope["_links"] = links
-
-        # Fill the links
-        links['self'] = {'href': api.url_for(UserPublic, nickname=nickname),
-                         'profile': ACCOUNTING_USER_PROFILE}
-        links['parent'] = {'href': api.url_for(User, nickname=nickname),
-                           'profile': ACCOUNTING_USER_PROFILE,
-                           'type': HAL}
-        links['private-data'] = {
-            'href': api.url_for(UserRestricted,
-                                nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': HAL}
-        links['edit'] = {
-            'href': api.url_for(UserPublic, nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': COLLECTIONJSON}
-
-        envelope['nickname'] = nickname
-        envelope['gender'] = user_db['public_profile']['gender']
-        envelope['birthday'] = user_db['public_profile']['birthday']
-        envelope['template'] = {"data": [
-            {"prompt": "Insert gender text",
-             "name": "gender",
-             "value": "",
-             "required": True},
-            {"prompt": "Insert birthday file name",
-             "name": "birthday",
-             "value": "",
-             "required": True}
-        ]
-        }
-
-
-        # RENDER
-        return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_USER_PROFILE)
-
-    def put(self, nickname):
-        """
-        Modifies the avatar and signature of a user. Only authorized users can
-        make the modifictation
-
-        ENTITY BODY INPUT FORMAT:
-        * Media type: Collection+JSON:
-         http://amundsen.com/media-types/collection/
-         - Extensions: template validation and value-types
-           https://github.com/collection-json/extensions
-        * Profile:
-            http://schema.org/Person
-
-        The body should be a Collection+JSON template.
-        Semantic descriptors used in template: signature, avatar.
-         INPUT PARAMETER:
-        - nickname: A string containing the nickname of the user to modify
-
-        OUTPUT:
-        Returns 204 if the message is modified correctly
-        Returns 400 if the body of the request is not well formed or it is
-        empty.
-        Returns 401 if the user is not authorized
-        Returns 404 if there is no message with messageid
-        Returns 415 if the input is not JSON.
-
-        """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_public")
-
-        # CHECK THAT MESSAGE EXISTS
-        if not g.db.contains_user(nickname):
-            raise NotFound()
-
-        # PARSE THE REQUEST
-        # Extract the request body. In general would be request.data
-        # Since the request is JSON I use request.get_json
-        # get_json returns a python dictionary after serializing the request body
-        # get_json returns None if the body of the request is not formatted
-        # using JSON
-        input = request.get_json(force=True)
-        if not input:
-            return create_error_response(415, "Unsupported Media Type",
-                                         "Use a JSON compatible format",
-                                         "User_public")
-
-
-        # It throws a BadRequest exception, and hence a 400 code if the JSON is
-        # not wellformed
-        try:
-            data = input['template']['data']
-            _gender = None
-            _birthday = None
-            for d in data:
-                # This code has a bad performance. We write it like this for
-                # simplicity. Another alternative should be used instead.
-                if d['name'] == "birthday":
-                    _birthday["birthday"] = d['value']
-                elif d['name'] == "gender":
-                    _gender["gender"] = d['value']
-            # CHECK THAT DATA RECEIVED IS CORRECT
-            if not _gender or not _birthday:
-                return create_error_response(400, "Wrong request format",
-                                             "Be sure you include gender and birthday",
-                                             "User_public")
-        except:
-            # This is launched if either gender or birthday does not exist or the
-            # template.data is not there.
-            return create_error_response(400, "Wrong request format",
-                                         "Be sure you include gender and birthday",
-                                         "User_public")
-        else:
-            user = {'public_profile': {'gender': _gender, 'birthday': _birthday}}
-            if not g.db.modify_user(nickname, user):
-                return NotFound()
-            return '', 204
-
-
-class UserRestricted(Resource):
-    def _isauthorized(self, nickname, authorization):
-        """
-        Check if a user is authorized or not to perform certain operation.
-
-        This is a simple implementation of this method. Just checks that the
-        authorization token is either admin or the nickname of the user to
-        authorize.
-        """
-        if authorization is not None and \
-                (authorization.lower() == "admin" or
-                         authorization.lower() == nickname.lower()):
-            return True
-        return False
-
-    def get(self, nickname):
-        """
-        Gets the restricted representation of a user. Only authorzed users
-        are allowed to modify it.
-
-        INPUT PARAMETER:
-        - nickname: A string containing the nickname of the required user.
-
-        OUTPUT:
-        Return 200 if the nickname exists.
-        Return 404 if the nickname is not stored in the system.
-        Return 401 if the user is not authorized
-
-        ENTITY BODY OUTPUT FORMAT:
-         * Media type: Collection+JSON:
-         http://amundsen.com/media-types/collection/
-         - Extensions: template validation and value-types
-           https://github.com/collection-json/extensions
-        * Profile:
-            http://schema.org/Person
-        Link relations used: self, parent, public-data, edit.
-        Semantic descriptors used: firstname, balance, password, email.
-
-        NOTE: Format of the database
-        The database append_user receives a dictionary with the format:
-	    {'restricted_profile':{'firstname':'','password':'','balance':'','email':''}
-	        }
-        }
-
-
-
-
-        """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
-        # PERFORM OPERATIONS
-        user_db = g.db.get_user(nickname)
-        if not user_db:
-            return create_error_response(404, "Unknown user",
-                                         "There is no a user with nickname %s"
-                                         % nickname,
-                                         "User_restricted")
-
-            # FILTER AND GENERATE RESPONSE
-            # Create the envelope:
-        envelope = {}
-        # Now create the links
-        links = {}
-        envelope["_links"] = links
-
-        # Fill the links
-        links['self'] = {'href': api.url_for(UserPublic, nickname=nickname),
-                         'profile': ACCOUNTING_USER_PROFILE}
-        links['parent'] = {'href': api.url_for(User, nickname=nickname),
-                           'profile': ACCOUNTING_USER_PROFILE,
-                           'type': HAL}
-        links['public-data'] = {
-            'href': api.url_for(UserPublic,
-                                nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': HAL}
-        links['edit'] = {
-            'href': api.url_for(UserRestricted, nickname=nickname),
-            'profile': ACCOUNTING_USER_PROFILE,
-            'type': COLLECTIONJSON}
-
-        envelope['nickname'] = nickname
-
-        envelope['email'] = user_db['restricted_profile']['email']
-        envelope['firstname'] = user_db['restricted_profile']['firstname']
-        envelope['balance'] = user_db['restricted_profile']['balance']
-        envelope['password'] = user_db['restricted_profile']['password']
-        envelope['template'] = {"data": [
-            {"prompt": "Insert user email",
-             "name": "email",
-             "value": "",
-             "required": True},
-            {"prompt": "Insert user firstname",
-             "name": "firstname",
-             "value": "",
-             "required": True},
-            {"prompt": "Insert user password",
-             "name": "password",
-             "value": "",
-             "required": True},
-            {"prompt": "Insert user balance",
-             "name": "balance",
-             "value": "",
-             "required": True},
-        ]
-        }
-        # RENDER
-        return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_USER_PROFILE)
-
-    def put(self, nickname):
-        """
-        Modifies an existing user. Only authorized users are allowed.
-
-        ENTITY BODY INPUT FORMAT:
-        * Media type: Collection+JSON:
-         http://amundsen.com/media-types/collection/
-        * Profile:
-            http://schema.org/Person
-
-        The body should be a Collection+JSON template.
-        Semantic descriptors used in template: email(mandatory),
-        firstname(mandatory), password(mandatory), balance(mandatory).
-
-        OUTPUT:
-        Return 204 if the restricted profile could be modified
-        Return 401 if the user is not authorized
-        Return 400 if the body is not well formed
-        Return 415 if it receives a media type != application/json
-        """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_restricted")
-        # Check user exists:
-        user_db = g.db.get_user(nickname)
-        if not user_db:
-            return create_error_response(404, "Unknown user",
-                                         "There is no a user with nickname %s"
-                                         % nickname,
-                                         "User_restricted")
-        # PARSE THE REQUEST:
-        input = request.get_json(force=True)
-        if not input:
-            return create_error_response(415, "Unsupported Media Type",
-                                         "Use a JSON compatible format",
-                                         "User_restricted")
-        # Get the request body and serialize it to object
-        # We should check that the format of the request body is correct. Check
-        # That mandatory attributes are there.
-        try:
-            data = input['template']['data']
-        except:
-            return create_error_response(400, "Bad format",
-                                         "You must embed the data in a Collection+JSON template",
-                                         "User_restricted")
-
-        _temp_dictionary = {}
-        for d in data:
-            # This code has a bad performance. We write it like this for
-            # simplicity. Another alternative should be used instead. E.g.
-            # generation expressions
-            if d['name'] == "email":
-                _temp_dictionary["email"] = d['value']
-            elif d['name'] == "password":
-                _temp_dictionary["password"] = d['value']
-            elif d['name'] == "balance":
-                _temp_dictionary["balance"] = d['value']
-            elif d['name'] == "firstName":
-                _temp_dictionary["firstname"] = d['value']
-
-        for key in ("email", "password", "firstname", "balance"):
-            if key not in _temp_dictionary:
-                return create_error_response(400, "Wrong request format",
-                                             "Be sure you include all mandatory" \
-                                             "properties: " + key + " missing",
-                                             "User_restricted")
-
-        user = {'restricted_profile': {'firstname': _temp_dictionary['firstname'],
-                                       'password': _temp_dictionary['password'],
-                                       'balance': _temp_dictionary['balance'],
-                                       'email': _temp_dictionary['email'],
-        }
-        }
-        g.db.modify_user(nickname, user)
-
-        # CREATE RESPONSE AND RENDER
-        return Response(status=204)
-
 
 class Income(Resource):
 
@@ -1064,6 +826,7 @@ class Incomes(Resource):
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=COLLECTIONJSON + ";" + ACCOUNTING_INCOME_PROFILE)
 
+
     def post(self, id):
         """
         Adds a new income to the specified user in the database.
@@ -1278,10 +1041,6 @@ api.add_resource(Users, '/accounting/api/users/',
                  endpoint='users')
 api.add_resource(User, '/accounting/api/users/<nickname>/',
                  endpoint='user')
-api.add_resource(UserPublic, '/accounting/api/users/<nickname>/public_profile/',
-                 endpoint='public_profile')
-api.add_resource(UserRestricted, '/accounting/api/users/<nickname>/restricted_profile/',
-                 endpoint='restricted_profile')
 api.add_resource(Incomes, '/accounting/api/user/<id>/incomes/',
                  endpoint='incomes')
 api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
