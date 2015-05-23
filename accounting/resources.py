@@ -206,7 +206,7 @@ class Users(Resource):
 
 class User(Resource):
     """
-    User Resource. Public and private profile are separate resources.
+    User Resource.  and private profile are separate resources.
     """
 
     def _isauthorized(self, nickname, authorization):
@@ -894,21 +894,8 @@ class Incomes(Resource):
 
 
 class Expenses(Resource):
-    def _isauthorized(self, nickname, authorization):
-        """
-        Check if a user is authorized or not to perform certain operation.
 
-        This is a simple implementation of this method. Just checks that the
-        authorization token is either admin or the nickname of the user to
-        authorize.
-        """
-        if authorization is not None and \
-                (authorization.lower() == "admin" or
-                         authorization.lower() == nickname.lower()):
-            return True
-        return False
-
-    def get(self, id):
+    def get(self, usrid):
         """
         Gets a list of all the expenses of the specified user in the database. It returns a status
         code 200.
@@ -923,12 +910,12 @@ class Expenses(Resource):
         """
         # PERFORM OPERATIONS
         # Create the messages list
-        user_expenses_db = g.db.get_user_expenses(id)
+        user_expenses_db = g.db.get_user_expenses(usrid)
 
         if user_expenses_db is None:
             return create_error_response(404, "Unknown user",
                                          "There is no a user with id %s"
-                                         % id,
+                                         % usrid,
                                          "expenses")
 
         # FILTER AND GENERATE THE RESPONSE
@@ -954,20 +941,20 @@ class Expenses(Resource):
             _source = user_expense['source']
             _amount = user_expense['amount']
             _date = user_expense['date']
-            _url = api.url_for(Expenses, id=id)
+            _url = api.url_for(Expenses, id=usrid)
             user_expense = {}
             user_expense['href'] = _url
             user_expense['read-only'] = True
             user_expense['data'] = []
             value = {'expense_id': _id, 'source': _source,
-                     'amount': _amount, 'date': _date, 'user_id': id}
+                     'amount': _amount, 'date': _date, 'user_id': usrid}
             user_expense['data'].append(value)
             items.append(user_expense)
         collection['items'] = items
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=COLLECTIONJSON + ";" + ACCOUNTING_EXPENSE_PROFILE)
 
-    def post(self, id):
+    def post(self, uid):
         """
         Adds a new expense to the specified user in the database.
 
@@ -996,7 +983,6 @@ class Expenses(Resource):
 
         data = input['template']['data']
 
-        _user_id = None
         _source = None
         _amount = None
         _description = None
@@ -1006,9 +992,7 @@ class Expenses(Resource):
             # This code has a bad performance. We write it like this for
             # simplicity. Another alternative should be used instead. E.g.
             # generation expressions
-            if d['name'] == "user_id":
-                _user_id = d['value']
-            elif d['name'] == "source":
+            if d['name'] == "source":
                 _source = d['value']
             elif d['name'] == "amount":
                 _amount = d['value']
@@ -1017,14 +1001,13 @@ class Expenses(Resource):
             elif d['name'] == "date":
                 _date = d['value']
 
-        if not _user_id or not _source or not _amount or not _date:
+        if not _source or not _amount or not _date:
             return create_error_response(400, "Wrong request format",
-                                         "Be sure you include all mandatory" \
-                                         "properties",
+                                         "Be sure you include all mandatory properties",
                                          "Expense")
 
         # But we are not going to do this exercise
-        _id = g.db.create_expense(_source, _amount, _date, _description, _user_id)
+        _id = g.db.create_expense(_source, _amount, _date, _description, uid)
 
         # CREATE RESPONSE AND RENDER
         return Response(status=201,

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" type="text/css" href="forum.css">
+	<title>Forum</title>
+	<script type="text/javascript" src="jquery.js"></script>
+	<script type="text/javascript" src="forum_client.js"></script>
+</head>
+
+<body> 
+	<div id="intro">
+		<h1>Forum administration panel</h1>
+		<span id="instructions">Click on a nickname in the sidebar to edit/delete a user info. Press <span class="oblique">"Add User"</span> to add a new user.</span>
+	</div>
+	<div id= "content">
+		<div id="sidebar"> 
+			<!-- Side bar area -->		
+			 <ul id="user_list">  
+
+			</ul>
+			<div id="addUserContainer">
+				<a href="#" id="addUser">ADD USER</a>
+			</div>
+		</div>
+		<div id = "mainContent" >
+			<div id="existingUserData">	 
+				<!-- Main content area -->
+				<div class="section" id="userPublicInfo">
+					<form action="#" id="user_public_form">	
+						<div class="commands">
+							<input id="deleteUser" type="button" value="Delete"/>
+						</div>
+						<p id="userHeader">  
+							<input class="noEditable" name="nickname" id="nickname" placeholder="nickname" type="text"  readonly="readonly"/> 
+							<p>Registered at <input class="noEditable" type="text" name="registrationdate" id="registrationdate" readonly="readonly"/>- <a href="#messages"><span id="messagesNumber">3</span> messages</a></p>  
+						</p> 
+					</form> 
+				</div>
+				<!-- User info area -->
+				<h3>User profile</h3> 
+				<div class="section" id="userRestrictedInfo">
+					<form action="#" id="user_restricted_form">
+						 			
+					</form>
+				</div>
+				<div class="section" id="messages">  
+					<!-- Message list area -->
+					<h3>Message List</h3>  
+					<div id="list">
+						<div class="message">  
+							<form action="#">  
+	
+							</form>
+						</div>  
+					</div>	
+				</div>  
+			</div>
+			<div id ="newUserData">
+					
+			</div>
+		</div>
+
+	</div>	  
+</body>
+
+</html> 
