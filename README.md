@@ -15,7 +15,7 @@ To deploy and populate the database follow these steps (Although one is provided
 
 
 To test the application we should run the app with:
-python -m accounting.resources
+python -m personalaccounting
 Path: http://127.0.0.1:5000/
 
 We have tested our RESTful API using the plugin for Google Chrome DHC - REST/HTTP API Client (https://chrome.google.com/webstore/detail/dhc-resthttp-api-client/aejoelaoggembcahagimdiliamlcdmfm)
@@ -27,11 +27,47 @@ users
 
 GET: 127.0.0.1:5000/accounting/api/users/ --> 200
 
-curl -i -X GET \ 'http://127.0.0.1:5000/accounting/api/users/'
+    curl -i -X GET \ 'http://127.0.0.1:5000/accounting/api/users/'
 
 DELETE: 127.0.0.1:5000/accounting/api/users/ --> 405
 
-curl -i -X DELETE \ 'http://127.0.0.1:5000/accounting/api/users/'
+    curl -i -X DELETE \ 'http://127.0.0.1:5000/accounting/api/users/'
+
+POST: 127.0.0.1:5000/accounting/api/users/ --> 201
+    body:
+    { "template" : {
+        "data" : [
+            {"prompt" : "Insert user birthday", "name" : "birthday", "value" : "19-04-1991"},
+            {"prompt" : "Insert user email", "name" : "email", "value" : "hola@email.com"},
+            {"prompt" : "Insert user firstName", "name" : "firstname", "value" : "Mick"},
+            {"prompt" : "Insert user gender", "name" : "gender", "value" : "male"},
+            {"prompt" : "Insert user gender", "name" : "nickname", "value" : "gio"},
+            {"prompt" : "Insert user gender", "name" : "password", "value" : "testtest"},
+            {"prompt" : "Insert user gender", "name" : "balance", "value" : "0"}
+        ]
+        }
+    } 
+
+POST: 127.0.0.1:5000/accounting/api/users/ --> 400
+    body:
+    { "template" : {
+        "data" : [
+            {"prompt" : "Insert user birthday", "name" : "birthday", "value" : "19-04-1991"},
+            {"prompt" : "Insert user email", "name" : "email", "value" : "hola@email.com"},
+            {"prompt" : "Insert user firstName", "name" : "firstname", "value" : "Mick"},
+            {"prompt" : "Insert user gender", "name" : "gender", "value" : "male"},
+            {"prompt" : "Insert user gender", "name" : "nickname", "value" : "gio"},
+            {"prompt" : "Insert user gender", "name" : "password", "value" : "testtest"},
+            {"prompt" : "Insert user gender", "name" : "balance", "value" : "0"}
+        ]
+        }
+    } 
+
+    (Using an existing nickname)
+    "message": "There is already a user with same nickname Giovanni. 
+
+
+
 
 user
 ----
@@ -64,6 +100,26 @@ DELETE: 127.0.0.1:5000/accounting/api/user/usr-1/incomes/ --> 405
 
 	curl -i -X DELETE \   -H "Authorization:Mystery" \ 'http://127.0.0.1:5000/accounting/api/user/usr-1/incomes/'
 
+GET: 127.0.0.1:5000/accounting/api/user/usr-1/incomes/ --> 200
+
+    curl -i -X GET  \ 'http://127.0.0.1:5000/accounting/api/user/usr-1/incomes/'
+
+GET: 127.0.0.1:5000/accounting/api/user/usr-9/incomes/ --> 404
+
+    curl -i -X GET  \ 'http://127.0.0.1:5000/accounting/api/user/usr-1/incomes/'
+
+POST: 127.0.0.1:5000/accounting/api/user/usr-1/incomes/ --> 201
+
+    body:
+    {"template" : {
+        "data" : [
+            {"prompt" : "", "name" : "source", "value" : "Bike"},
+            {"prompt" : "", "name" : "amount", "value" : "30"},
+            {"prompt" : "", "name" : "date", "value" : "10-03-2015"},
+            {"prompt" : "", "name" : "description", "value" : "Blue bike"}
+                ]
+                    }
+    }
 
 
 
@@ -87,8 +143,47 @@ DELETE: http://127.0.0.1:5000/accounting/api/incomes/inc-10/ --> 404
 
 	curl -i -X DELETE \ 'http://127.0.0.1:5000/accounting/api/incomes/inc-10/'
 
+PUT: http://127.0.0.1:5000/accounting/api/incomes/inc-4/
+    body:
+
+    {"template" : {
+        "data" : [
+            {"prompt" : "", "name" : "source", "value" : "Skates"},
+            {"prompt" : "", "name" : "amount", "value" : "10"},
+            {"prompt" : "", "name" : "date", "value" : "15-05-2015"},
+            {"prompt" : "", "name" : "description", "value" : "Ice skates payment"}
+                ]
+                    }
+    }
+
 expenses
 --------
+
+GET: 127.0.0.1:5000/accounting/api/user/usr-1/expenses/ --> 200
+
+    curl -i -X GET  \ 'http://127.0.0.1:5000/accounting/api/user/usr-1/expenses/'
+
+GET: 127.0.0.1:5000/accounting/api/user/usr-7/expenses/ --> 404
+
+    curl -i -X GET  \ 'http://127.0.0.1:5000/accounting/api/user/usr-7/expenses/'
+
+DELETE: 127.0.0.1:5000/accounting/api/user/usr-1/expenses/ --> 405
+
+    curl -i -X DELETE \   -H "Authorization:Mystery" \ 'http://127.0.0.1:5000/accounting/api/user/usr-1/expenses/'
+
+POST: 127.0.0.1:5000/accounting/api/user/usr-1/expenses/ --> 201
+
+    body:
+    {"template" : {
+        "data" : [
+        {"prompt" : "", "name" : "source", "value" : "Skates"},
+        {"prompt" : "", "name" : "amount", "value" : "10"},
+        {"prompt" : "", "name" : "date", "value" : "15-05-2015"},
+        {"prompt" : "", "name" : "description", "value" : "Ice skates payment"}
+                ]
+                    }
+    }
+
 
 expense
 -------
@@ -104,6 +199,20 @@ GET: http://127.0.0.1:5000/accounting/api/expenses/exp-10/ --> 404
 DELETE: http://127.0.0.1:5000/accounting/api/expenses/exp-10/ --> 404
 
 	curl -i -X DELETE \ 'http://127.0.0.1:5000/accounting/api/expenses/exp-10/'
+
+PUT: http://127.0.0.1:5000/accounting/api/expenses/exp-4/
+    body:
+
+    {"template" : {
+        "data" : [
+            {"prompt" : "", "name" : "source", "value" : "Pillows"},
+            {"prompt" : "", "name" : "amount", "value" : "15"},
+            {"prompt" : "", "name" : "date", "value" : "10-05-2015"},
+            {"prompt" : "", "name" : "description", "value" : "Pillows for the bed"}
+                ]
+                }
+    }
+
 
 
 
