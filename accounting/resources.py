@@ -1,8 +1,7 @@
 import json
 
 from flask import Flask, request, Response, g, jsonify
-from flask.ext.restful import Resource, Api, abort
-from werkzeug.exceptions import NotFound, UnsupportedMediaType
+from flask.ext.restful import Resource, Api
 
 from utils import RegexConverter
 import database
@@ -155,7 +154,6 @@ class Users(Resource):
 
         _nickname = None
         _gender = None
-        _balance = None
         _firstname = None
         _password = None
         _birthday = None
@@ -174,9 +172,7 @@ class Users(Resource):
                 _birthday = d['value']
             elif d['name'] == "email":
                 _email = d['value']
-            elif d['name'] == "balance":
-                _balance = d['value']
-        if not _birthday or not _email or not _balance or \
+        if not _birthday or not _email or \
                 not _gender or not _firstname or not _nickname or not _password:
             return create_error_response(400, "Wrong request format",
                                          "Be sure you include all mandatory properties",
@@ -188,15 +184,7 @@ class Users(Resource):
                                           Try another one " % _nickname,
                                          "User")
 
-        user = {'nickname': _nickname,
-                'gender': _gender,
-                'birthday': _birthday,
-                'firstname': _firstname,
-                'password': _password,
-                'balance': _balance,
-                'email': _email}
-
-        nickname = g.db.append_user(_nickname, user)
+        nickname = g.db.create_user(_nickname, _email, _password, _firstname, _birthday, _gender, )
 
         # CREATE RESPONSE AND RENDER
         return Response(status=201,
@@ -254,7 +242,6 @@ class User(Resource):
         envelope = {}
         # Now create the links
         links = {}
-        
 
         envelope['nickname'] = nickname
         envelope['id'] = user_db['user_id']
@@ -269,7 +256,7 @@ class User(Resource):
              "name": "gender",
              "value": "",
              "required": True},
-             {"prompt": "Insert id text",
+            {"prompt": "Insert id text",
              "name": "id",
              "value": "",
              "required": True},
@@ -277,7 +264,7 @@ class User(Resource):
              "name": "birthday",
              "value": "",
              "required": True},
-             {"prompt": "Insert user email",
+            {"prompt": "Insert user email",
              "name": "email",
              "value": "",
              "required": True},
@@ -301,7 +288,6 @@ class User(Resource):
 
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=HAL + ";" + ACCOUNTING_USER_PROFILE)
-
 
 
     def put(self, nickname):
@@ -331,16 +317,6 @@ class User(Resource):
         Returns 415 if the input is not JSON.
 
         """
-        # CHECK IF THE USER IS AUTHORIZED TO EDIT THIS DATA
-        authorization = None
-        try:
-            authorization = request.headers["authorization"]
-        except KeyError:
-            pass
-        if not self._isauthorized(nickname, authorization):
-            return create_error_response(401, "Unauthorized",
-                                         "You should be authorized to edit this data",
-                                         "User_profile")
 
         # CHECK THAT USER EXISTS
         user_db = g.db.get_user(nickname)
@@ -384,14 +360,14 @@ class User(Resource):
                 _temp_dictionary["birthday"] = d['value']
             elif d['name'] == "email":
                 _temp_dictionary["email"] = d['value']
-            elif d['name'] == "password":
-                _temp_dictionary["password"] = d['value']
+            elif d['name'] == "userid":
+                _temp_dictionary["userid"] = d['value']
             elif d['name'] == "balance":
                 _temp_dictionary["balance"] = d['value']
-            elif d['name'] == "firstName":
+            elif d['name'] == "firstname":
                 _temp_dictionary["firstname"] = d['value']
 
-        for key in ("gender", "birthday","email", "password", "firstname", "balance"):
+        for key in ("gender", "birthday", "email", "userid", "firstname", "balance"):
             if key not in _temp_dictionary:
                 return create_error_response(400, "Wrong request format",
                                              "Be sure you include all mandatory" \
@@ -401,7 +377,7 @@ class User(Resource):
         user = {'gender': _temp_dictionary['gender'],
                 'birthday': _temp_dictionary['birthday'],
                 'firstname': _temp_dictionary['firstname'],
-                'password': _temp_dictionary['password'],
+                'userid': _temp_dictionary['userid'],
                 'balance': _temp_dictionary['balance'],
                 'email': _temp_dictionary['email'],
         }
@@ -449,8 +425,8 @@ class User(Resource):
                                          "Please, provide credentials",
                                          "User")
 
-class Income(Resource):
 
+class Income(Resource):
     def get(self, id):
         """
         Gets an specific (by id) income.
@@ -606,7 +582,6 @@ class Income(Resource):
 
 
 class Expense(Resource):
-
     def get(self, id):
         """
         Gets an specific (by id) expense.
@@ -767,7 +742,7 @@ class Incomes(Resource):
             return True
         return False
 
-    def get(self, uid):
+    def get(self, id):
         """
         Gets a list of all the incomes of the specified user in the database. It returns a status
         code 200.
@@ -782,12 +757,12 @@ class Incomes(Resource):
         """
         # PERFORM OPERATIONS
         # Create the messages list
-        user_incomes_db = g.db.get_user_incomes(uid)
+        user_incomes_db = g.db.get_user_incomes(id)
 
         if user_incomes_db is None:
             return create_error_response(404, "Unknown user",
                                          "There is no a user with id %s"
-                                         %uid,
+                                         % id,
                                          "Incomes")
 
         # FILTER AND GENERATE THE RESPONSE
@@ -796,7 +771,7 @@ class Incomes(Resource):
         collection = {}
         envelope["collection"] = collection
         collection['version'] = "1.0"
-        collection['href'] = api.url_for(Incomes)
+        collection['href'] = api.url_for(Incomes, id=id)
         collection['template'] = {
             "data": [
                 {"prompt": "", "name": "income_id", "value": "", "required": True},
@@ -813,13 +788,13 @@ class Incomes(Resource):
             _source = user_income['source']
             _amount = user_income['amount']
             _date = user_income['date']
-            _url = api.url_for(Incomes, id=uid)
+            _url = api.url_for(Incomes, id=id)
             user_income = {}
             user_income['href'] = _url
             user_income['read-only'] = True
             user_income['data'] = []
             value = {'income_id': _id, 'source': _source,
-                     'amount': _amount, 'date': _date, 'user_id': uid}
+                     'amount': _amount, 'date': _date, 'user_id': id}
             user_income['data'].append(value)
             items.append(user_income)
         collection['items'] = items
@@ -856,7 +831,6 @@ class Incomes(Resource):
 
         data = input['template']['data']
 
-        _user_id = None
         _source = None
         _amount = None
         _description = None
@@ -866,9 +840,7 @@ class Incomes(Resource):
             # This code has a bad performance. We write it like this for
             # simplicity. Another alternative should be used instead. E.g.
             # generation expressions
-            if d['name'] == "user_id":
-                _user_id = d['value']
-            elif d['name'] == "source":
+            if d['name'] == "source":
                 _source = d['value']
             elif d['name'] == "amount":
                 _amount = d['value']
@@ -877,25 +849,21 @@ class Incomes(Resource):
             elif d['name'] == "date":
                 _date = d['value']
 
-        if not _user_id or not _source or not _amount or not _date:
+        if not _source or not _amount or not _date:
             return create_error_response(400, "Wrong request format",
                                          "Be sure you include all mandatory" \
                                          "properties",
                                          "Income")
 
         # But we are not going to do this exercise
-        _id = g.db.create_income(_source, _amount, _date, _description, _user_id)
+        _id = g.db.create_income(_source, _amount, _date, _description, id)
 
         # CREATE RESPONSE AND RENDER
-        return Response(status=201,
-                        headers={"Location": api.url_for(Income,
-                                                         id=_id)}
-        )
+        return Response(status=201, headers={"Location": api.url_for(Income, id=_id)})
 
 
 class Expenses(Resource):
-
-    def get(self, usrid):
+    def get(self, id):
         """
         Gets a list of all the expenses of the specified user in the database. It returns a status
         code 200.
@@ -910,12 +878,12 @@ class Expenses(Resource):
         """
         # PERFORM OPERATIONS
         # Create the messages list
-        user_expenses_db = g.db.get_user_expenses(usrid)
+        user_expenses_db = g.db.get_user_expenses(id)
 
         if user_expenses_db is None:
             return create_error_response(404, "Unknown user",
                                          "There is no a user with id %s"
-                                         % usrid,
+                                         % id,
                                          "expenses")
 
         # FILTER AND GENERATE THE RESPONSE
@@ -924,7 +892,7 @@ class Expenses(Resource):
         collection = {}
         envelope["collection"] = collection
         collection['version'] = "1.0"
-        collection['href'] = api.url_for(Expenses)
+        collection['href'] = api.url_for(Expenses, id=id)
         collection['template'] = {
             "data": [
                 {"prompt": "", "name": "expense_id", "value": "", "required": True},
@@ -941,20 +909,20 @@ class Expenses(Resource):
             _source = user_expense['source']
             _amount = user_expense['amount']
             _date = user_expense['date']
-            _url = api.url_for(Expenses, id=usrid)
+            _url = api.url_for(Expenses, id=id)
             user_expense = {}
             user_expense['href'] = _url
             user_expense['read-only'] = True
             user_expense['data'] = []
             value = {'expense_id': _id, 'source': _source,
-                     'amount': _amount, 'date': _date, 'user_id': usrid}
+                     'amount': _amount, 'date': _date, 'user_id': id}
             user_expense['data'].append(value)
             items.append(user_expense)
         collection['items'] = items
         # RENDER
         return Response(json.dumps(envelope), 200, mimetype=COLLECTIONJSON + ";" + ACCOUNTING_EXPENSE_PROFILE)
 
-    def post(self, uid):
+    def post(self, id):
         """
         Adds a new expense to the specified user in the database.
 
@@ -1007,12 +975,10 @@ class Expenses(Resource):
                                          "Expense")
 
         # But we are not going to do this exercise
-        _id = g.db.create_expense(_source, _amount, _date, _description, uid)
+        _id = g.db.create_expense(_source, _amount, _date, _description, id)
 
         # CREATE RESPONSE AND RENDER
-        return Response(status=201,
-                        headers={"Location": api.url_for(Expense, id=_id)}
-        )
+        return Response(status=201, headers={"Location": api.url_for(Expense, id=_id)})
 
 # Add the Regex Converter so we can use regex expressions when we define the
 # routes
@@ -1020,18 +986,12 @@ app.url_map.converters['regex'] = RegexConverter
 
 
 # Define the routes
-api.add_resource(Users, '/accounting/api/users/',
-                 endpoint='users')
-api.add_resource(User, '/accounting/api/users/<nickname>/',
-                 endpoint='user')
-api.add_resource(Incomes, '/accounting/api/user/<id>/incomes/',
-                 endpoint='incomes')
-api.add_resource(Expenses, '/accounting/api/user/<id>/expenses/',
-                 endpoint='expenses')
-api.add_resource(Income, '/accounting/api/incomes/<id>/',
-                 endpoint='income')
-api.add_resource(Expense, '/accounting/api/expenses/<id>/',
-                 endpoint='expense')
+api.add_resource(Users, '/accounting/api/users/', endpoint='users')
+api.add_resource(User, '/accounting/api/users/<nickname>/', endpoint='user')
+api.add_resource(Incomes, '/accounting/api/user/<regex("usr-\d+"):id>/incomes/', endpoint='incomes')
+api.add_resource(Expenses, '/accounting/api/user/<regex("usr-\d+"):id>/expenses/', endpoint='expenses')
+api.add_resource(Income, '/accounting/api/incomes/<regex("inc-\d+"):id>/', endpoint='income')
+api.add_resource(Expense, '/accounting/api/expenses/<regex("exp-\d+"):id>/', endpoint='expense')
 
 
 # Start the application

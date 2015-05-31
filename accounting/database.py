@@ -323,6 +323,12 @@ class AccountingDatabase(object):
             # Build the return object
             return self._create_user_object(row)
 
+    def contains_user(self, nickname):
+        if self.get_user(nickname) is not None:
+            return True
+        else:
+            return False
+
     def delete_user(self, nickname):
         """
         Delete the user with id given as parameter.
@@ -352,7 +358,7 @@ class AccountingDatabase(object):
             # Return true if user is deleted.
             return True
 
-    def modify_user(self, userId, nickname, email, name, balance, birthday, gender):
+    def modify_user(self, nickname, user):
         """
         Modify the nickname, of the user which has userId as id.
         INPUT:
@@ -362,6 +368,13 @@ class AccountingDatabase(object):
             - returns the id of the edited user or None if the user was
               not found.
         """
+        gender = user['gender']
+        birthday = user['birthday']
+        name = user['firstname']
+        balance = user['balance']
+        email = user['email']
+        userId = user['userid']
+
         # Changes the id to integer
         match = re.match(r'usr-(\d{1,3})', userId)
         if match is None:
