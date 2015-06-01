@@ -94,6 +94,23 @@ DELETE: 127.0.0.1:5000/accounting/api/users/Wappu/ --> 401
 
 	curl -i -X DELETE \   -H "Authorization:Basic d2FwcHU6d2FwcHU=" \ 'http://127.0.0.1:5000/accounting/api/users/Wappu/'
 
+PUT: 127.0.0.1:5000/accounting/api/users/Mystery/ --> 204
+
+    curl -i -X PUT \
+       -d \
+    '{"template" : {
+          "data" : [
+            {"prompt" : "Insert user birthday", "name" : "birthday", "value" : "19-04-1991"},
+            {"prompt" : "Insert user email", "name" : "email", "value" : "mysss@email.com"},
+            {"prompt" : "Insert user firstName", "name" : "firstname", "value" : "Mick"},
+            {"prompt" : "Insert user gender", "name" : "gender", "value" : "male"},
+            {"prompt" : "Insert user gender", "name" : "balance", "value" : "0"},
+            {"prompt" : "Insert user gender", "name" : "userid", "value" : "usr-1"}
+          ]
+        }
+    } ' \
+     'http://127.0.0.1:5000/accounting/api/users/Mystery/'
+
 
 incomes
 -------
