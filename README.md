@@ -34,6 +34,7 @@ DELETE: 127.0.0.1:5000/accounting/api/users/ --> 405
     curl -i -X DELETE \ 'http://127.0.0.1:5000/accounting/api/users/'
 
 POST: 127.0.0.1:5000/accounting/api/users/ --> 201
+
     body:
     { "template" : {
         "data" : [
@@ -49,6 +50,7 @@ POST: 127.0.0.1:5000/accounting/api/users/ --> 201
     } 
 
 POST: 127.0.0.1:5000/accounting/api/users/ --> 400
+
     body:
     { "template" : {
         "data" : [
