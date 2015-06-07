@@ -788,7 +788,7 @@ class Incomes(Resource):
             _source = user_income['source']
             _amount = user_income['amount']
             _date = user_income['date']
-            _url = api.url_for(Incomes, id=id)
+            _url = api.url_for(Income, id=_id)
             user_income = {}
             user_income['href'] = _url
             user_income['read-only'] = True
@@ -909,7 +909,7 @@ class Expenses(Resource):
             _source = user_expense['source']
             _amount = user_expense['amount']
             _date = user_expense['date']
-            _url = api.url_for(Expenses, id=id)
+            _url = api.url_for(Expense, id=_id)
             user_expense = {}
             user_expense['href'] = _url
             user_expense['read-only'] = True

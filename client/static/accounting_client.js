@@ -50,7 +50,7 @@ function getUser(URL) {
     }).always(function(){
         //Remove old list of users, clear the form data hide the content information(no selected)
         $("#income_list").empty();
-        $("#expense_list").hide();
+        $("#expense_list").empty();
 
     }).done(function (data, textStatus, jqXHR){
         if (DEBUG) {
@@ -72,8 +72,8 @@ function getUser(URL) {
 
 
         //get the incomes and expenses
-        //getIncomes(id);
-        //getExpenses(id)
+        getIncomes("/accounting/api/user/" + id + "/incomes/");
+        getExpenses("/accounting/api/user/" + id + "/expenses/");
     }).fail(function (jqXHR, textStatus, errorThrown){
         if (DEBUG) {
             console.log ("RECEIVED ERROR: textStatus:",textStatus, ";error:",errorThrown)
@@ -91,7 +91,7 @@ function addUser(apiurl, userData){
         //dataType:DEFAULT_DATATYPE,
         data:userData,
         processData:false,
-        contentType: COLLECTIONJSON+";"+FORUM_USER_PROFILE
+        contentType: COLLECTIONJSON
     }).done(function (data, textStatus, jqXHR){
         if (DEBUG) {
             console.log ("RECEIVED RESPONSE: data:",data,"; textStatus:",textStatus)
@@ -171,9 +171,9 @@ function appendUserToList(nickname){
 
 /**** INCOME ****/
 
-function getIncomes(id){
+function getIncomes(apiurl){
     return $.ajax({
-        url: "/accounting/api/user/" + id + "/incomes/",
+        url: apiurl,
         dataType:DEFAULT_DATATYPE
     }).done(function (data, textStatus, jqXHR){
         if (DEBUG) {
@@ -207,7 +207,8 @@ function getIncome(url){
         var amount =  data.amount;
         var date= data.date;
         var description= data.description;
-        appendIncomeToList(source, amount, date, description);
+        var id = data._id;
+        appendIncomeToList(source, amount, date, description, id);
 
     }).fail(function (jqXHR, textStatus, errorThrown){
         if (DEBUG) {
@@ -279,17 +280,17 @@ function deleteIncome(apiurl) {
         if (DEBUG) {
             console.log ("RECEIVED RESPONSE: data:",data,"; textStatus:",textStatus)
         }
-        alert ("The user has been deleted from the database");
+        alert ("The income has been deleted from the database");
 
     }).fail(function (jqXHR, textStatus, errorThrown){
         if (DEBUG) {
             console.log ("RECEIVED ERROR: textStatus:",textStatus, ";error:",errorThrown)
         }
-        alert ("The user could not be deleted from the database");
+        alert ("The income could not be deleted from the database");
     });
 }
 
-function appendIncomeToList(nickname){
+function appendIncomeToList(source, amount, date, description, id){
     /* WE have to build the following HTML document
      <li>
      <p class="name">Source</p>
@@ -301,18 +302,21 @@ function appendIncomeToList(nickname){
         "<p class='name'>"+source+"</p>"+
         "<p class='name'>"+amount+"</p>"+
         "<p class='name'>"+date+"</p>"+
-        "<div class='message'>"+description+"</div"
+        "<button class='deleteItem' type='button' id='delete_income"+id+"'>Delete </button>"+
+        "<div class='message'>"+description+"</div>"
+
     );
     //Append to list
     $("#income_list").append($income);
+    $("#delete_income"+id).on("click", handleDeleteIncome);
 }
 
 
 /**** EXPENSE ****/
 
-function getExpenses(id){
+function getExpenses(apiurl){
     return $.ajax({
-        url: "/accounting/api/user/" + id + "/expenses/",
+        url: apiurl,
         dataType:DEFAULT_DATATYPE
     }).done(function (data, textStatus, jqXHR){
         if (DEBUG) {
@@ -440,10 +444,12 @@ function appendExpenseToList(source, amount, date, description){
         "<p class='name'>"+source+"</p>"+
         "<p class='name'>"+amount+"</p>"+
         "<p class='name'>"+date+"</p>"+
-        "<div class='message'>"+description+"</div"
+        "<button class='deleteItem' type='button' id='delete_income'>Delete</button>"+
+        "<div class='message'>"+description+"</div>"
     );
     //Append to list
     $("#expense_list").append($expense);
+    $("#delete_expense").on("click", handleDeleteExpense);
 }
 
 /**** END RESTFUL CLIENT****/
@@ -491,7 +497,25 @@ function handleGetUser(event) {
 	return false; //IMPORTANT TO AVOID <A> DEFAULT ACTIONS
 }
 
+function handleDeleteIncome(event){
+    if (DEBUG) {
+        console.log ("Triggered handleDeleteIncome")
+    }
+    var id = event.currentTarget.innerHTML.split(" ")[1];
+    var url = "/accounting/api/incomes/"+id+"/";
+    deleteIncome(url);
+    //reload
+}
 
+function handleDeleteExpense(event){
+    if (DEBUG) {
+        console.log ("Triggered handleDeleteExpense")
+    }
+    var id = event.currentTarget.innerHTML.split(" ")[1];
+    var url = "/accounting/api/expenses/"+id+"/";
+    deleteExpense(url);
+    //reload
+}
 /**
  Creates User resource representation using the data from the form showed in the screen.
  Calls the method addUser to upload the new User resource to the Web service.
@@ -501,13 +525,49 @@ function handleCreateUser(event){
 	if (DEBUG) {
 		console.log ("Triggered handleCreateUser")
 	}
-	event.preventDefault();
-	var $form = $(this);
-	$nickname = $form.children("input[name=nickname]");
-	var nickname = $nickname.val();
-	var template = serializeFormTemplate($form);
-	var url = $form.attr("action");
-	addUser(url, template, nickname);
+	var data = [$("#firstname_add").val(),
+        $("#nickname_add").val(),
+        $("#email_add").val(),
+        $("#gender_add").val(),
+        $("#birthday_add").val(),
+        $("#password_add").val()];
+
+    for(var i = 0; i < data.length; ++i){
+        if(data[i] == ""){
+            alert ("Could not create new user, some field is missing");
+            return false;
+        }
+    }
+    var envelope={'template':{
+        'data':[]
+    }};
+    var userData = {};
+    userData.name = "firstname";
+    userData.value = data[0];
+    envelope.template.data.push(userData);
+    userData = {};
+    userData.name = "nickname";
+    userData.value = data[1];
+    envelope.template.data.push(userData);
+    userData = {};
+    userData.name = "email";
+    userData.value = data[2];
+    envelope.template.data.push(userData);
+    userData = {};
+    userData.name = "gender";
+    userData.value = data[3];
+    envelope.template.data.push(userData);
+    userData = {};
+    userData.name = "birthday";
+    userData.value = data[4];
+    envelope.template.data.push(userData);
+    userData = {};
+    userData.name = "password";
+    userData.value = data[5];
+    envelope.template.data.push(userData);
+
+	var url = "/accounting/api/users/";
+	addUser(url, envelope);
 	return false; //Avoid executing the default submit
 }
 /**
@@ -527,6 +587,13 @@ function handleEditUser(event) {
 	return false; //Avoid executing the default submit
 }
 
+function handleCreateIncome(event){
+
+}
+
+function handleCreateExpense(Event){
+
+}
 
 /**
 Calls the function deleteUser to remove the current user from the Web service.
@@ -593,6 +660,9 @@ $(function(){
     $("#messages").on("click", "div div form div span input", handleDeleteMessage);
 	// li a.user_link => handleGetUser
     $("#user_list").on("click", "li a", handleGetUser);
+    $("#add_user").on("click", handleCreateUser);
+    $("#add_income").on("click", handleCreateIncome);
+    $("#add_expense").on("click", handleCreateExpense);
 	// Direct and delegated events from http://api.jquery.com/on/
 
 	//Retrieve list of users from the server

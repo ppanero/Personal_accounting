@@ -41,8 +41,8 @@
                                 <ul>
                                     <li><button class="btn btn-default" type="button" href="#add_user_form" data-toggle="modal" id="add_user_list">Add user</button></li>
                                     <li><button class="btn btn-default" type="button" href="#delete_user_modal" data-toggle="modal" id="delete_user_list">Delete user</button></li>
-                                    <li><button class="btn btn-default" type="button" href="#add_income_form" data-toggle="modal">Add expense</button></li>
-                                    <li><button class="btn btn-default" type="button" href="#add_expense_form" data-toggle="modal">Add income</button></li>
+                                    <li><button class="btn btn-default" type="button" href="#add_expense_form" data-toggle="modal">Add expense</button></li>
+                                    <li><button class="btn btn-default" type="button" href="#add_income_form" data-toggle="modal">Add income</button></li>
                                 </ul>
                             </div>
                         </div>
@@ -145,13 +145,39 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Modal Header</h4>
+                <h4 class="modal-title">Create user</h4>
             </div>
             <div class="modal-body">
-
+                <div class="form-group">
+                    <label for="email">First name:</label>
+                    <input type="text" class="form-control" id="firstname_add">
+                </div>
+                <div class="form-group">
+                    <label for="email">Nickname:</label>
+                    <input type="text" class="form-control" id="nickname_add">
+                </div>
+                <div class="form-group">
+                    <label for="email">birthday:</label>
+                    <input type="text" class="form-control" id="birthday_add">
+                </div>
+                <div class="form-group">
+                    <label for="email">Gender:</label>
+                    <input type="text" class="form-control" id="gender_add">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email address:</label>
+                    <input type="email" class="form-control" id="email_add">
+                </div>
+                <div class="form-group">
+                    <label for="email">Password:</label>
+                    <input type="email" class="form-control" id="password_add">
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button type="submit" class="btn btn-default" id="add_user">Submit</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
 
@@ -165,8 +191,8 @@
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title">DELETE USER (click in the name to delete)</h4>
             </div>
-            <div class="modal-body">
-                <ul id="user_list" class="profile-details">
+            <div id="user_list" class="modal-body">
+                <ul  class="profile-details">
                 </ul>
             </div>
             <div class="modal-footer">
@@ -183,12 +209,28 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Modal Header</h4>
+                <h4 class="modal-title">Create Income</h4>
             </div>
             <div class="modal-body">
-                <p>Some text in the modal.</p>
+                <div class="form-group">
+                    <label for="source_income">Source:</label>
+                    <input type="text" class="form-control" id="source_income">
+                </div>
+                <div class="form-group">
+                    <label for="amount_income">Amount:</label>
+                    <input type="text" class="form-control" id="amount_income">
+                </div>
+                <div class="form-group">
+                    <label for="date_income">Date:</label>
+                    <input type="text" class="form-control" id="date_income">
+                </div>
+                <div class="form-group">
+                    <label for="description_income">Description</label>
+                    <input type="text" class="form-control" id="description_income">
+                </div>
             </div>
             <div class="modal-footer">
+                <button type="submit" class="btn btn-default" id="add_income">Submit</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div>
@@ -202,12 +244,28 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Modal Header</h4>
+                <h4 class="modal-title">Create Expense</h4>
             </div>
             <div class="modal-body">
-                <p>Some text in the modal.</p>
+                <div class="form-group">
+                    <label for="source_expense">Source:</label>
+                    <input type="text" class="form-control" id="source_expense">
+                </div>
+                <div class="form-group">
+                    <label for="amount_expense">Amount:</label>
+                    <input type="text" class="form-control" id="amount_expense">
+                </div>
+                <div class="form-group">
+                    <label for="date_expense">Date:</label>
+                    <input type="text" class="form-control" id="date_expense">
+                </div>
+                <div class="form-group">
+                    <label for="description_expense">Description</label>
+                    <input type="text" class="form-control" id="description_expense">
+                </div>
             </div>
             <div class="modal-footer">
+                <button type="submit" class="btn btn-default" id="add_expense">Submit</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div>
