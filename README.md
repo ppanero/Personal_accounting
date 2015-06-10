@@ -21,7 +21,6 @@ Path: http://127.0.0.1:5000/
 We have tested our RESTful API using the plugin for Google Chrome DHC - REST/HTTP API Client (https://chrome.google.com/webstore/detail/dhc-resthttp-api-client/aejoelaoggembcahagimdiliamlcdmfm)
 We have carried out the following tests:
 
-
 users
 -----
 
@@ -235,5 +234,10 @@ PUT: http://127.0.0.1:5000/accounting/api/expenses/exp-4/
 
 
 
+#Client:
 
+To access the client application access:
+
+    http://127.0.0.1:5000/client/ui.html?nickname=Mystery For a normal user
+    http://127.0.0.1:5000/client/ui.html?nickname=admin For an admin user
 
