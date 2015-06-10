@@ -1,3 +1,5 @@
+NOTE: The code might fail, not be efficient, or not even be clear. It was just a simple project to get familar with REST web services and clients. Check before use.
+
 To deploy and populate the database follow these steps (Although one is provided with the project):
 
 1- Go to the project folder
