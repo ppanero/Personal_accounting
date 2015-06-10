@@ -54,7 +54,10 @@
                 <div class="col-sm-10 col-md-8">
                     <div class="row">
                         <div id="user_profile" class="col-lg-12">
-                            <div><h1>User Profile</h1></div>
+                            <div>
+                                <button class='deleteItem' type='button' href="#edit_user_form" data-toggle="modal" id='edit_user'>Edit User Profile</button>
+                                <h1>User Profile</h1>
+                            </div>
                             <div class="col-sm-5">
                                 <div class="row">
                                     <div class="col-xs-5 col-sm-12">
@@ -176,6 +179,48 @@
             <div class="modal-footer">
                 <div class="col-sm-offset-2 col-sm-10">
                     <button type="submit" class="btn btn-default" id="add_user">Submit</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<div id="edit_user_form" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Edit user</h4>
+                <p>If the field is left blank the data will not change.</p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="email">First name:</label>
+                    <input type="text" class="form-control" id="firstname_edit">
+                </div>
+                <div class="form-group">
+                    <label for="email">birthday:</label>
+                    <input type="text" class="form-control" id="birthday_edit">
+                </div>
+                <div class="form-group">
+                    <label for="email">Gender:</label>
+                    <input type="text" class="form-control" id="gender_edit">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email address:</label>
+                    <input type="email" class="form-control" id="email_edit">
+                </div>
+                <div class="form-group">
+                    <label for="balance">Balance:</label>
+                    <input type="text" class="form-control" id="balance_edit">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="col-sm-offset-2 col-sm-10">
+                    <button type="submit" class="btn btn-default" id="edit_user_btn">Submit</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>
